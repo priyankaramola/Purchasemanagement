@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "title": "Acceptance",
+    "description": "Details how the seller formally accepts the PO, which can be done through a signature, written confirmation, or by beginning performance of the work."
+  },
+
+  {
+    "id": 2,
+    "title": "Delivery and Inspection",
+    "description": "Outlines the shipping method, delivery schedule, and what happens if the goods are delivered late or in the wrong quantity. It also grants the buyer the right to inspect goods upon arrival and reject them if they are non-conforming or defective."
+  },
+ 
+  {
+    "id": 3,
+    "title": "Compliance with Laws",
+    "description": "Requires the seller to adhere to all applicable international, federal, and local laws related to the production, sale, and transport of the goods or services."
+  }
+]
+
