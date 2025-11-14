@@ -107,7 +107,7 @@ useEffect(() => {
   const fetchWorkflows = async () => {
     try {
       const res = await axios.get(
-        `${API.WORKFLOW_API}/uniworkflow/workflow/get-modules/module?module_name=Purchase Management&sub_module_name=Vendor Management`,
+        `${API.WORKFLOW_API}/workflow/get-modules/module?module_name=Purchase Management&sub_module_name=Vendor Management`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

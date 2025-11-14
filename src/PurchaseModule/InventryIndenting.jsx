@@ -1043,7 +1043,7 @@ const InventryIndenting = () => {
     const fetchDocumentOptions = async () => {
       try {
         // 1. Get service_id for "purchase"
-        const serviceRes = await axios.get(`${API.API_BASE}/dms/test/service`, {
+        const serviceRes = await axios.get(`${API.API_BASE}/service`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const purchaseService = serviceRes.data.find(
@@ -1053,7 +1053,7 @@ const InventryIndenting = () => {
         const service_id = purchaseService.id;
 
         // 2. Get doctype_id for "POI" (or any doctype you want)
-        const doctypeRes = await axios.get(`${API.API_BASE}/dms/test/doctype`, {
+        const doctypeRes = await axios.get(`${API.API_BASE}/doctype`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const doctype = doctypeRes.data.find(
@@ -1064,7 +1064,7 @@ const InventryIndenting = () => {
 
         // 3. Fetch document options using service_id and doctype_id
         const docRes = await axios.get(
-          `${API.API_BASE}/dms/test/dmsapi/upload?service_id=${service_id}&doctype_id=${doctype_id}`,
+          `${API.API_BASE}/dmsapi/upload?service_id=${service_id}&doctype_id=${doctype_id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setDocumentOptions(
