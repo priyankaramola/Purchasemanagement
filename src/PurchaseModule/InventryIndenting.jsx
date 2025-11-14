@@ -329,154 +329,110 @@ const InventryIndenting = () => {
     }
   };
 
-const handleGenerateRFPClick = async (item = null) => {
-  const indentingId =
-    item?.id ??
-    item?.indent_id ??
-    item?.indentId ??
-    selectedRequest?.id ??
-    selectedRequest?.indent_id ??
-    selectedRequest?.indentId;
+  const handleGenerateRFPClick = async (item = null) => {
+    const indentingId =
+      item?.id ??
+      item?.indent_id ??
+      item?.indentId ??
+      selectedRequest?.id ??
+      selectedRequest?.indent_id ??
+      selectedRequest?.indentId;
 
-  try {
-    const sourceData = item || selectedRequest;
-    let products = [];
-
-    // Prepare product list
-    if (Array.isArray(sourceData?.products) && sourceData.products.length > 0) {
-      products = sourceData.products;
-    } else if (sourceData) {
-      products = [
-        {
-          product_name: sourceData.asset_name || "",
-          asset_name: sourceData.asset_name || "",
-          request_for: sourceData.request_for || "",
-          category: sourceData.category || "",
-          quantity: sourceData.quantity || "",
-          uom: sourceData.uom || "",
-          unit: sourceData.uom || "",
-          workflow: sourceData.workflow_id || "",
-          budget: sourceData.budget_id || sourceData.budget || "",
-          description: sourceData.remarks || sourceData.description || "",
-          id: sourceData.id || null,
-        },
-      ];
-    }
-
-    const mappedProducts = products.map((p) => ({
-      product_name: p.product_name || p.asset_name || "",
-      asset_name: p.asset_name || p.product_name || "",
-      request_for: p.request_for || sourceData?.request_for || "",
-      category: p.category || sourceData?.category || "",
-      quantity: p.quantity || 0,
-      uom: p.uom || p.unit || "",
-      unit: p.uom || p.unit || "",
-      workflow: p.workflow || sourceData?.workflow_id || "",
-      budget: p.budget || p.budget_id || sourceData?.budget_id || "",
-      description: p.description || p.remarks || p.note || sourceData?.remarks || "",
-      id: p.id || null,
-    }));
-
-    setProductItems(mappedProducts);
-    setSelectedItems([]);
-
-    // ✅ Unified RFP API (works for both normal & sales indent)
-    const response = await axios.put(
-      `${API.PURCHASE_API}/indenting/${indentingId}/rfp`,
-      { indenting_id: indentingId },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    if (response.data.RFP_ID) {
-      setRfpId(response.data.RFP_ID);
-    } else {
-      setRfpId(null);
-    }
-
-    // Fetch indent details
     try {
-      const indentResponse = await axios.get(
-        `${API.PURCHASE_API}/indenting/${indentingId}`,
+      const sourceData = item || selectedRequest;
+      let products = [];
+
+      // Prepare product list
+      if (
+        Array.isArray(sourceData?.products) &&
+        sourceData.products.length > 0
+      ) {
+        products = sourceData.products;
+      } else if (sourceData) {
+        products = [
+          {
+            product_name: sourceData.asset_name || "",
+            asset_name: sourceData.asset_name || "",
+            request_for: sourceData.request_for || "",
+            category: sourceData.category || "",
+            quantity: sourceData.quantity || "",
+            uom: sourceData.uom || "",
+            unit: sourceData.uom || "",
+            workflow: sourceData.workflow_id || "",
+            budget: sourceData.budget_id || sourceData.budget || "",
+            description: sourceData.remarks || sourceData.description || "",
+            id: sourceData.id || null,
+          },
+        ];
+      }
+
+      const mappedProducts = products.map((p) => ({
+        product_name: p.product_name || p.asset_name || "",
+        asset_name: p.asset_name || p.product_name || "",
+        request_for: p.request_for || sourceData?.request_for || "",
+        category: p.category || sourceData?.category || "",
+        quantity: p.quantity || 0,
+        uom: p.uom || p.unit || "",
+        unit: p.uom || p.unit || "",
+        workflow: p.workflow || sourceData?.workflow_id || "",
+        budget: p.budget || p.budget_id || sourceData?.budget_id || "",
+        description:
+          p.description || p.remarks || p.note || sourceData?.remarks || "",
+        id: p.id || null,
+      }));
+
+      setProductItems(mappedProducts);
+      setSelectedItems([]);
+
+      // ✅ Unified RFP API (works for both normal & sales indent)
+      const response = await axios.put(
+        `${API.PURCHASE_API}/indenting/${indentingId}/rfp`,
+        { indenting_id: indentingId },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      if (indentResponse.data) {
-        if (Array.isArray(indentResponse.data.products) && indentResponse.data.products.length > 0) {
-          const items = indentResponse.data.products.map((p) => ({
-            product_name: p.product_name || p.asset_name || "",
-            asset_name: p.asset_name || p.product_name || "",
-            request_for: p.request_for || indentResponse.data.request_for || "",
-            category: p.category || indentResponse.data.category || "",
-            quantity: p.quantity || 0,
-            uom: p.uom || p.unit || "",
-            unit: p.uom || p.unit || "",
-            workflow: p.workflow || indentResponse.data.workflow_id || "",
-            budget: p.budget || p.budget_id || indentResponse.data.budget_id || "",
-            description: p.description || p.remarks || indentResponse.data.remarks || "",
-            id: p.id || null,
-          }));
-          setProductItems(items);
-        } else {
-          const items = [
-            {
-              product_name: indentResponse.data.product_name || indentResponse.data.asset_name || "",
-              asset_name: indentResponse.data.asset_name || "",
-              request_for: indentResponse.data.request_for || "",
-              category: indentResponse.data.category || "",
-              quantity: indentResponse.data.quantity || 0,
-              uom: indentResponse.data.uom || indentResponse.data.unit || "",
-              unit: indentResponse.data.uom || indentResponse.data.unit || "",
-              workflow: indentResponse.data.workflow_id || "",
-              budget: indentResponse.data.budget || indentResponse.data.budget_id || "",
-              description: indentResponse.data.description || indentResponse.data.remarks || "",
-              id: indentResponse.data.id || null,
-            },
-          ];
-          setProductItems(items);
-        }
+      if (response.data.RFP_ID) {
+        setRfpId(response.data.RFP_ID);
       } else {
-        setProductItems([]);
+        setRfpId(null);
       }
-    } catch (error) {
-      console.error("Error fetching indent details:", error);
-    }
 
-    setShowRFP(true);
-    fetchDetails();
-  } catch (error) {
-    const apiMessage = error.response?.data?.message;
-    const apiData = error.response?.data?.data;
-
-    if (apiMessage === "RFP ID already generated" && apiData) {
-      console.log("RFP already exists, using existing RFP ID:", apiData);
-      setRfpId(apiData);
-      setShowRFP(true);
-      
+      // Fetch indent details
       try {
-        // Fetch indent details to populate product items
         const indentResponse = await axios.get(
           `${API.PURCHASE_API}/indenting/${indentingId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        
+
         if (indentResponse.data) {
-          // Try products array first, fall back to single item
-          const items = Array.isArray(indentResponse.data.products) && indentResponse.data.products.length > 0
-            ? indentResponse.data.products.map(p => ({
-                product_name: p.product_name || p.asset_name || "",
-                asset_name: p.asset_name || p.product_name || "",
-                request_for: p.request_for || indentResponse.data.request_for || "",
-                category: p.category || indentResponse.data.category || "",
-                quantity: p.quantity || 0,
-                uom: p.uom || p.unit || "",
-                unit: p.uom || p.unit || "",
-                workflow: p.workflow || indentResponse.data.workflow_id || "",
-                budget: p.budget || p.budget_id || indentResponse.data.budget_id || "",
-                description: p.description || p.remarks || indentResponse.data.remarks || "",
-                id: p.id || null,
-              }))
-            : [{
-                product_name: indentResponse.data.product_name || indentResponse.data.asset_name || "",
+          if (
+            Array.isArray(indentResponse.data.products) &&
+            indentResponse.data.products.length > 0
+          ) {
+            const items = indentResponse.data.products.map((p) => ({
+              product_name: p.product_name || p.asset_name || "",
+              asset_name: p.asset_name || p.product_name || "",
+              request_for:
+                p.request_for || indentResponse.data.request_for || "",
+              category: p.category || indentResponse.data.category || "",
+              quantity: p.quantity || 0,
+              uom: p.uom || p.unit || "",
+              unit: p.uom || p.unit || "",
+              workflow: p.workflow || indentResponse.data.workflow_id || "",
+              budget:
+                p.budget || p.budget_id || indentResponse.data.budget_id || "",
+              description:
+                p.description || p.remarks || indentResponse.data.remarks || "",
+              id: p.id || null,
+            }));
+            setProductItems(items);
+          } else {
+            const items = [
+              {
+                product_name:
+                  indentResponse.data.product_name ||
+                  indentResponse.data.asset_name ||
+                  "",
                 asset_name: indentResponse.data.asset_name || "",
                 request_for: indentResponse.data.request_for || "",
                 category: indentResponse.data.category || "",
@@ -484,47 +440,139 @@ const handleGenerateRFPClick = async (item = null) => {
                 uom: indentResponse.data.uom || indentResponse.data.unit || "",
                 unit: indentResponse.data.uom || indentResponse.data.unit || "",
                 workflow: indentResponse.data.workflow_id || "",
-                budget: indentResponse.data.budget || indentResponse.data.budget_id || "",
-                description: indentResponse.data.description || indentResponse.data.remarks || "",
+                budget:
+                  indentResponse.data.budget ||
+                  indentResponse.data.budget_id ||
+                  "",
+                description:
+                  indentResponse.data.description ||
+                  indentResponse.data.remarks ||
+                  "",
                 id: indentResponse.data.id || null,
-              }];
-          
-          console.log("Setting product items for existing RFP:", items);
-          setProductItems(items);
+              },
+            ];
+            setProductItems(items);
+          }
+        } else {
+          setProductItems([]);
         }
-      } catch (innerErr) {
-        console.error("Failed to fetch indent after RFP exists:", innerErr);
-        // Don't block the flow if indent fetch fails
+      } catch (error) {
+        console.error("Error fetching indent details:", error);
       }
 
-      // Fetch organization details and continue flow
+      setShowRFP(true);
       fetchDetails();
-      return; // Exit early after handling existing RFP case
-    }
+    } catch (error) {
+      const apiMessage = error.response?.data?.message;
+      const apiData = error.response?.data?.data;
 
-    setModalProps({
-      type: "error",
-      title: "Error!",
-      message:
-        apiMessage ||
-        error.response?.data?.error ||
-        error.message ||
-        "Failed to generate RFP. Please try again.",
-      onClose: () => setShowModal(false),
-    });
-    setShowModal(true);
-    setShowRFP(true);
-    fetchDetails();
+      if (apiMessage === "RFP ID already generated" && apiData) {
+        console.log("RFP already exists, using existing RFP ID:", apiData);
+        setRfpId(apiData);
+        setShowRFP(true);
 
-    if (error.response?.data?.RFP_ID) {
-      setRfpId(error.response.data.RFP_ID);
-    } else if (item?.rfp_id) {
-      setRfpId(item.rfp_id);
-    } else if (selectedRequest?.rfp_id) {
-      setRfpId(selectedRequest.rfp_id);
+        try {
+          // Fetch indent details to populate product items
+          const indentResponse = await axios.get(
+            `${API.PURCHASE_API}/indenting/${indentingId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (indentResponse.data) {
+            // Try products array first, fall back to single item
+            const items =
+              Array.isArray(indentResponse.data.products) &&
+              indentResponse.data.products.length > 0
+                ? indentResponse.data.products.map((p) => ({
+                    product_name: p.product_name || p.asset_name || "",
+                    asset_name: p.asset_name || p.product_name || "",
+                    request_for:
+                      p.request_for || indentResponse.data.request_for || "",
+                    category: p.category || indentResponse.data.category || "",
+                    quantity: p.quantity || 0,
+                    uom: p.uom || p.unit || "",
+                    unit: p.uom || p.unit || "",
+                    workflow:
+                      p.workflow || indentResponse.data.workflow_id || "",
+                    budget:
+                      p.budget ||
+                      p.budget_id ||
+                      indentResponse.data.budget_id ||
+                      "",
+                    description:
+                      p.description ||
+                      p.remarks ||
+                      indentResponse.data.remarks ||
+                      "",
+                    id: p.id || null,
+                  }))
+                : [
+                    {
+                      product_name:
+                        indentResponse.data.product_name ||
+                        indentResponse.data.asset_name ||
+                        "",
+                      asset_name: indentResponse.data.asset_name || "",
+                      request_for: indentResponse.data.request_for || "",
+                      category: indentResponse.data.category || "",
+                      quantity: indentResponse.data.quantity || 0,
+                      uom:
+                        indentResponse.data.uom ||
+                        indentResponse.data.unit ||
+                        "",
+                      unit:
+                        indentResponse.data.uom ||
+                        indentResponse.data.unit ||
+                        "",
+                      workflow: indentResponse.data.workflow_id || "",
+                      budget:
+                        indentResponse.data.budget ||
+                        indentResponse.data.budget_id ||
+                        "",
+                      description:
+                        indentResponse.data.description ||
+                        indentResponse.data.remarks ||
+                        "",
+                      id: indentResponse.data.id || null,
+                    },
+                  ];
+
+            console.log("Setting product items for existing RFP:", items);
+            setProductItems(items);
+          }
+        } catch (innerErr) {
+          console.error("Failed to fetch indent after RFP exists:", innerErr);
+          // Don't block the flow if indent fetch fails
+        }
+
+        // Fetch organization details and continue flow
+        fetchDetails();
+        return; // Exit early after handling existing RFP case
+      }
+
+      setModalProps({
+        type: "error",
+        title: "Error!",
+        message:
+          apiMessage ||
+          error.response?.data?.error ||
+          error.message ||
+          "Failed to generate RFP. Please try again.",
+        onClose: () => setShowModal(false),
+      });
+      setShowModal(true);
+      setShowRFP(true);
+      fetchDetails();
+
+      if (error.response?.data?.RFP_ID) {
+        setRfpId(error.response.data.RFP_ID);
+      } else if (item?.rfp_id) {
+        setRfpId(item.rfp_id);
+      } else if (selectedRequest?.rfp_id) {
+        setRfpId(selectedRequest.rfp_id);
+      }
     }
-  }
-};
+  };
 
   const filteredRequests = requests.filter((item) => {
     let matches = true;
@@ -537,13 +585,28 @@ const handleGenerateRFPClick = async (item = null) => {
     if (search) {
       // normalize search term and include numeric id/user searches
       const searchTerm = search.toString().trim().toLowerCase();
-      const inAssetName = item.asset_name?.toString().toLowerCase().includes(searchTerm);
-      const inCategory = item.category?.toString().toLowerCase().includes(searchTerm);
-      const inRequestFor = item.request_for?.toString().toLowerCase().includes(searchTerm);
-      const inIndentId = item.indent_id?.toString().toLowerCase().includes(searchTerm) ||
+      const inAssetName = item.asset_name
+        ?.toString()
+        .toLowerCase()
+        .includes(searchTerm);
+      const inCategory = item.category
+        ?.toString()
+        .toLowerCase()
+        .includes(searchTerm);
+      const inRequestFor = item.request_for
+        ?.toString()
+        .toLowerCase()
+        .includes(searchTerm);
+      const inIndentId =
+        item.indent_id?.toString().toLowerCase().includes(searchTerm) ||
         item.id?.toString().toLowerCase().includes(searchTerm);
-      const inUserId = item.user_id?.toString().toLowerCase().includes(searchTerm);
-      if (!(inAssetName || inCategory || inRequestFor || inIndentId || inUserId)) {
+      const inUserId = item.user_id
+        ?.toString()
+        .toLowerCase()
+        .includes(searchTerm);
+      if (
+        !(inAssetName || inCategory || inRequestFor || inIndentId || inUserId)
+      ) {
         matches = false;
       }
     }
@@ -648,251 +711,272 @@ const handleGenerateRFPClick = async (item = null) => {
     }
   };
 
-//   const handleSave = async () => {
-//     try {
-//       const userId = sessionStorage.getItem("userId");
-//       if (!userId) throw new Error("User ID not found in session storage");
+  //   const handleSave = async () => {
+  //     try {
+  //       const userId = sessionStorage.getItem("userId");
+  //       if (!userId) throw new Error("User ID not found in session storage");
 
-//       let logoUrl = formData.logoUrl; // default to prefilled logo URL
+  //       let logoUrl = formData.logoUrl; // default to prefilled logo URL
 
-//       // === Upload Logo only if new file selected ===
-//       if (formData.logo instanceof File) {
-//         const publish_id = await getDmsPublishId(
-//           "purchase",
-//           "ORGANIZATION_LOGO",
-//           "ORGANIZATION_LOGO"
-//         );
-//         const logoFormData = new FormData();
-//         logoFormData.append("documents", formData.logo);
-//         logoFormData.append("ref", "RFP");
-//         logoFormData.append(
-//           "metadata",
-//           JSON.stringify([
-//             {
-//               service: "purchase",
-//               publish_id,
-//               user_id: userId,
-//               document_name: formData.logo.name,
-//             },
-//           ])
-//         );
-//         logoFormData.append("custom_folder", "purchase");
+  //       // === Upload Logo only if new file selected ===
+  //       if (formData.logo instanceof File) {
+  //         const publish_id = await getDmsPublishId(
+  //           "purchase",
+  //           "ORGANIZATION_LOGO",
+  //           "ORGANIZATION_LOGO"
+  //         );
+  //         const logoFormData = new FormData();
+  //         logoFormData.append("documents", formData.logo);
+  //         logoFormData.append("ref", "RFP");
+  //         logoFormData.append(
+  //           "metadata",
+  //           JSON.stringify([
+  //             {
+  //               service: "purchase",
+  //               publish_id,
+  //               user_id: userId,
+  //               document_name: formData.logo.name,
+  //             },
+  //           ])
+  //         );
+  //         logoFormData.append("custom_folder", "purchase");
 
-//         const logoUploadRes = await axios.post(
-//           API.DMS_UPLOAD ||
-//             "https://devapi.softtrails.net/saas/dms/test/dmsapi/upload-documents",
-//           logoFormData,
-//           {
-//             headers: {
-//               "Content-Type": "multipart/form-data",
-//               Authorization: `Bearer ${token}`,
-//             },
-//           }
-//         );
+  //         const logoUploadRes = await axios.post(
+  //           API.DMS_UPLOAD ||
+  //             "https://devapi.softtrails.net/saas/dms/test/dmsapi/upload-documents",
+  //           logoFormData,
+  //           {
+  //             headers: {
+  //               "Content-Type": "multipart/form-data",
+  //               Authorization: `Bearer ${token}`,
+  //             },
+  //           }
+  //         );
 
-//         logoUrl = logoUploadRes.data?.uploaded_files?.[0]?.file_url;
-//         if (!logoUrl) throw new Error("Logo upload failed");
-//       }
+  //         logoUrl = logoUploadRes.data?.uploaded_files?.[0]?.file_url;
+  //         if (!logoUrl) throw new Error("Logo upload failed");
+  //       }
 
-//   //  const fileUrl = fileUploadRes.data?.uploaded_files?.[0]?.file_url;
-//   //     if (!fileUrl) throw new Error("Specification file upload failed");
+  //   //  const fileUrl = fileUploadRes.data?.uploaded_files?.[0]?.file_url;
+  //   //     if (!fileUrl) throw new Error("Specification file upload failed");
 
-// const rfpPayload = {
-//   rfp_id: rfpId || undefined,
-//   user_id: Number(userId), // ensure number type
-//   Organization_Name: formData.organization || "",
-//   Logo: formData.logoUrl || "",
-//   Title: formData.title || "",
-//   Start_Date: formData.issuedDate || "",
-//   End_Date: formData.dueDate || "",
-//   // Upload_file: fileUrl || "",            // matches API example key
-//   additional_description: {
-//     description: formData.description || "",
-//     notes: formData.notes || ""          // optional - add to formData if needed
-//   },
-//   // If backend expects a count or id, adapt here. If you have array of required documents:
-//   required_doc: Array.isArray(formData.requiredDocument)
-//     ? formData.requiredDocument.length
-//     : formData.requiredDocument || 0
-// };
-//       const rfpResponse = await axios.post(
-//         `${API.PURCHASE_API}/rfps/create_rfp`,
-//         rfpPayload,
-//         { headers: { Authorization: `Bearer ${token}` } }
-//       );
+  // const rfpPayload = {
+  //   rfp_id: rfpId || undefined,
+  //   user_id: Number(userId), // ensure number type
+  //   Organization_Name: formData.organization || "",
+  //   Logo: formData.logoUrl || "",
+  //   Title: formData.title || "",
+  //   Start_Date: formData.issuedDate || "",
+  //   End_Date: formData.dueDate || "",
+  //   // Upload_file: fileUrl || "",            // matches API example key
+  //   additional_description: {
+  //     description: formData.description || "",
+  //     notes: formData.notes || ""          // optional - add to formData if needed
+  //   },
+  //   // If backend expects a count or id, adapt here. If you have array of required documents:
+  //   required_doc: Array.isArray(formData.requiredDocument)
+  //     ? formData.requiredDocument.length
+  //     : formData.requiredDocument || 0
+  // };
+  //       const rfpResponse = await axios.post(
+  //         `${API.PURCHASE_API}/rfps/create_rfp`,
+  //         rfpPayload,
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       );
 
-//       console.log("RFP created successfully:", rfpResponse.data);
-//       setModalProps({
-//         type: "success",
-//         title: "Success!",
-//         message: "RFP created successfully!",
-//         onClose: () => setShowModal(false),
-//       });
-//       setShowModal(true);
-//     } catch (error) {
-//       console.error("Error saving RFP:", error);
-//       const apiMsg =
-//         error.response?.data?.message ||
-//         error.response?.data?.error ||
-//         error.message ||
-//         "Failed to create RFP";
-//       setModalProps({
-//         type: "error",
-//         message: apiMsg,
-//         onClose: () => setShowModal(false),
-//       });
-//       setShowModal(true);
-//     }
-//   };
+  //       console.log("RFP created successfully:", rfpResponse.data);
+  //       setModalProps({
+  //         type: "success",
+  //         title: "Success!",
+  //         message: "RFP created successfully!",
+  //         onClose: () => setShowModal(false),
+  //       });
+  //       setShowModal(true);
+  //     } catch (error) {
+  //       console.error("Error saving RFP:", error);
+  //       const apiMsg =
+  //         error.response?.data?.message ||
+  //         error.response?.data?.error ||
+  //         error.message ||
+  //         "Failed to create RFP";
+  //       setModalProps({
+  //         type: "error",
+  //         message: apiMsg,
+  //         onClose: () => setShowModal(false),
+  //       });
+  //       setShowModal(true);
+  //     }
+  //   };
 
-const handleSave = async () => {
-  try {
-    const userId = sessionStorage.getItem("userId");
-    if (!userId) throw new Error("User ID not found in session storage");
+  const handleSave = async () => {
+    try {
+      const userId = sessionStorage.getItem("userId");
+      if (!userId) throw new Error("User ID not found in session storage");
 
-    // Validate required form fields: End Date is required in the UI.
-    if (!formData.dueDate) {
+      // Validate required form fields: End Date is required in the UI.
+      if (!formData.dueDate) {
+        setModalProps({
+          type: "warning",
+          title: "Missing End Date",
+          message: "Please fill the End Date before generating the RFP.",
+          onClose: () => setShowModal(false),
+        });
+        setShowModal(true);
+        return; // stop further processing until End Date is provided
+      }
+
+      // === Helper to upload a file to DMS ===
+      // uploadToDMS now accepts an optional `docName` parameter which is used
+      // as the `doc_name` when fetching the DMS publish_id mapping. If not
+      // provided, the docType is used as the doc_name (backwards-compatible).
+      const uploadToDMS = async (file, docType, folderName, docName) => {
+        const publish_id = await getDmsPublishId(
+          "purchase",
+          docType,
+          docName || docType
+        );
+
+        const formData = new FormData();
+        formData.append("documents", file);
+        formData.append("ref", "RFP");
+        formData.append(
+          "metadata",
+          JSON.stringify([
+            {
+              service: "purchase",
+              publish_id,
+              user_id: userId,
+              document_name: file.name,
+            },
+          ])
+        );
+        formData.append("custom_folder", folderName);
+
+        const uploadRes = await axios.post(
+          API.DMS_UPLOAD ||
+            "https://devapi.softtrails.net/saas/dms/test/dmsapi/upload-documents",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const fileUrl = uploadRes.data?.uploaded_files?.[0]?.file_url;
+        if (!fileUrl) throw new Error(`${docType} upload failed`);
+        return fileUrl;
+      };
+
+      // === 1. Upload logo if a file ===
+      let logoUrl = formData.logoUrl;
+      if (formData.logo instanceof File) {
+        // Upload ORGANIZATION_LOGO first
+        logoUrl = await uploadToDMS(
+          formData.logo,
+          "ORGANIZATION_LOGO",
+          "purchase"
+        );
+      }
+
+      // === 2. Upload user-selected specification file (if any) as RFP_SPECIFICATION ===
+      let specFileUrl = "";
+      if (formData.file instanceof File) {
+        specFileUrl = await uploadToDMS(
+          formData.file,
+          "RFP_SPECIFICATION",
+          "purchase"
+        );
+      }
+
+      // === 3. Generate RFP PDF from template ===
+      const tempDiv = document.createElement("div");
+      document.body.appendChild(tempDiv);
+      const root = createRoot(tempDiv);
+      root.render(<RfpTemplate formData={formData} />);
+
+      const pdfBlob = await html2pdf()
+        .set({
+          margin: 10,
+          filename: "RFP_Template.pdf",
+          jsPDF: { unit: "mm", format: "a4" },
+        })
+        .from(tempDiv)
+        .outputPdf("blob");
+
+      document.body.removeChild(tempDiv);
+
+      // Create a File object for DMS upload
+      const pdfFile = new File([pdfBlob], "RFP_Template.pdf", {
+        type: "application/pdf",
+      });
+
+      // === 4. Upload the generated RFP PDF (doctype 'RFP', doc_name 'Generated RFP') ===
+      const generatedRfpUrl = await uploadToDMS(
+        pdfFile,
+        "RFP",
+        "purchase",
+        "Generated RFP"
+      );
+
+      // === 5. Upload additional document if selected ===
+      let additionalDocUrl = "";
+      if (formData.additionalDoc instanceof File) {
+        additionalDocUrl = await uploadToDMS(
+          formData.additionalDoc,
+          "ADDITIONAL_DOC",
+          "purchase"
+        );
+      }
+
+      const rfpPayload = {
+        rfp_id: rfpId || undefined,
+        user_id: Number(userId),
+        Organization_Name: formData.organization || "",
+        Logo: logoUrl || "",
+        Title: formData.title || "",
+        Start_Date: formData.issuedDate || "",
+        End_Date: formData.dueDate || "",
+        Upload_file: specFileUrl || "",
+        additional_description: {
+          description: formData.description || "",
+          notes: formData.notes || "",
+        },
+        required_doc: Array.isArray(formData.requiredDocument)
+          ? formData.requiredDocument.length
+          : formData.requiredDocument || 0,
+        rfp_file_link: generatedRfpUrl || "",
+      };
+
+      const rfpResponse = await axios.post(
+        `${API.PURCHASE_API}/rfps/create_rfp`,
+        rfpPayload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("✅ RFP created successfully:", rfpResponse.data);
       setModalProps({
-        type: "warning",
-        title: "Missing End Date",
-        message: "Please fill the End Date before generating the RFP.",
+        type: "success",
+        title: "Success!",
+        message: "RFP created successfully!",
         onClose: () => setShowModal(false),
       });
       setShowModal(true);
-      return; // stop further processing until End Date is provided
+    } catch (error) {
+      const apiMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Failed to create RFP";
+      setModalProps({
+        type: "error",
+        message: apiMsg,
+        onClose: () => setShowModal(false),
+      });
+      setShowModal(true);
     }
-
-    // === Helper to upload a file to DMS ===
-    // uploadToDMS now accepts an optional `docName` parameter which is used
-    // as the `doc_name` when fetching the DMS publish_id mapping. If not
-    // provided, the docType is used as the doc_name (backwards-compatible).
-    const uploadToDMS = async (file, docType, folderName, docName) => {
-      const publish_id = await getDmsPublishId("purchase", docType, docName || docType);
-
-      const formData = new FormData();
-      formData.append("documents", file);
-      formData.append("ref", "RFP");
-      formData.append(
-        "metadata",
-        JSON.stringify([
-          {
-            service: "purchase",
-            publish_id,
-            user_id: userId,
-            document_name: file.name,
-          },
-        ])
-      );
-      formData.append("custom_folder", folderName);
-
-      const uploadRes = await axios.post(
-        API.DMS_UPLOAD ||
-          "https://devapi.softtrails.net/saas/dms/test/dmsapi/upload-documents",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const fileUrl = uploadRes.data?.uploaded_files?.[0]?.file_url;
-      if (!fileUrl) throw new Error(`${docType} upload failed`);
-      return fileUrl;
-    };
-
-    // === 1. Upload logo if a file ===
-    let logoUrl = formData.logoUrl;
-    if (formData.logo instanceof File) {
-      // Upload ORGANIZATION_LOGO first
-      logoUrl = await uploadToDMS(formData.logo, "ORGANIZATION_LOGO", "purchase");
-    }
-
-    // === 2. Upload user-selected specification file (if any) as RFP_SPECIFICATION ===
-    let specFileUrl = "";
-    if (formData.file instanceof File) {
-      specFileUrl = await uploadToDMS(formData.file, "RFP_SPECIFICATION", "purchase");
-    }
-
-    // === 3. Generate RFP PDF from template ===
-    const tempDiv = document.createElement("div");
-    document.body.appendChild(tempDiv);
-    const root = createRoot(tempDiv);
-    root.render(<RfpTemplate formData={formData} />);
-
-    const pdfBlob = await html2pdf()
-      .set({ margin: 10, filename: "RFP_Template.pdf", jsPDF: { unit: "mm", format: "a4" } })
-      .from(tempDiv)
-      .outputPdf("blob");
-
-    document.body.removeChild(tempDiv);
-
-    // Create a File object for DMS upload
-    const pdfFile = new File([pdfBlob], "RFP_Template.pdf", { type: "application/pdf" });
-
-  // === 4. Upload the generated RFP PDF (doctype 'RFP', doc_name 'Generated RFP') ===
-  const generatedRfpUrl = await uploadToDMS(pdfFile, "RFP", "purchase", "Generated RFP");
-
-    // === 5. Upload additional document if selected ===
-    let additionalDocUrl = "";
-    if (formData.additionalDoc instanceof File) {
-      additionalDocUrl = await uploadToDMS(formData.additionalDoc, "ADDITIONAL_DOC", "purchase");
-    }
-
-    // === 6. Prepare payload for create_rfp API ===
-    const rfpPayload = {
-      rfp_id: rfpId || undefined,
-      user_id: Number(userId),
-      Organization_Name: formData.organization || "",
-      Logo: logoUrl || "",
-      Title: formData.title || "",
-  Start_Date: formData.issuedDate || "",
-  // Use the End Date entered in the form. It's validated above as required.
-  End_Date: formData.dueDate || "",
-  // Upload_file is the generated RFP (the main document)
-  Upload_file: generatedRfpUrl || "",
-  // include the original specification file link if provided
-  specification_file_link: specFileUrl || "",
-      additional_description: {
-        description: formData.description || "",
-        notes: formData.notes || "",
-      },
-      required_doc: Array.isArray(formData.requiredDocument)
-        ? formData.requiredDocument.length
-        : formData.requiredDocument || 0,
-      rfp_file_link: additionalDocUrl || "",
-    };
-
-    // === 6. Call create_rfp API ===
-    const rfpResponse = await axios.post(
-      `${API.PURCHASE_API}/rfps/create_rfp`,
-      rfpPayload,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    console.log("✅ RFP created successfully:", rfpResponse.data);
-    setModalProps({
-      type: "success",
-      title: "Success!",
-      message: "RFP created successfully!",
-      onClose: () => setShowModal(false),
-    });
-    setShowModal(true);
-  } catch (error) {
-    const apiMsg =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Failed to create RFP";
-    setModalProps({
-      type: "error",
-      message: apiMsg,
-      onClose: () => setShowModal(false),
-    });
-    setShowModal(true);
-  }
-};
+  };
   const fetchDetails = async () => {
     try {
       setLoading(true);
@@ -1107,9 +1191,7 @@ const handleSave = async () => {
 
                 <td className="p-2 flex items-center justify-center gap-2">
                   {/* Preview PDF (only when rfp_id exists) */}
-                  {(
-                    item?.rfp_id ?? item?.rfpId ?? item?.RFP_ID ?? item?.rfp
-                  ) ? (
+                  {item?.rfp_id ?? item?.rfpId ?? item?.RFP_ID ?? item?.rfp ? (
                     <div
                       className="text-custome-blue cursor-pointer"
                       title="Preview RFP"
@@ -1117,9 +1199,9 @@ const handleSave = async () => {
                     >
                       <FaFilePdf color="red" size={18} />
                     </div>
-                    ) : (
-                     <div className="text-gray-400 text-sm">&nbsp;</div>
-                   )} 
+                  ) : (
+                    <div className="text-gray-400 text-sm">&nbsp;</div>
+                  )}
 
                   {/* Generate / Regenerate RFP (visible for every row) */}
                   <div
