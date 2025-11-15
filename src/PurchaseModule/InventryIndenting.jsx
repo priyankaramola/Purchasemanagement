@@ -8,7 +8,7 @@ import PopupModal from "./PopupModal";
 import DownloadTableButtons from "./components/Downloadpdfexcel";
 import { FaFilePdf, FaRegFileAlt } from "react-icons/fa"; // <-- added FaRegFileAlt
 import { createRoot } from "react-dom/client";
-import RfpTemplate from "./components/RfpTemplate";
+import RfpGenerator from "./components/RfpGenerator";
 import html2pdf from "html2pdf.js";
 
 const InventryIndenting = () => {
@@ -894,7 +894,7 @@ const InventryIndenting = () => {
       const tempDiv = document.createElement("div");
       document.body.appendChild(tempDiv);
       const root = createRoot(tempDiv);
-      root.render(<RfpTemplate formData={formData} />);
+      root.render(<RfpGenerator formData={formData} />);
 
       const pdfBlob = await html2pdf()
         .set({

@@ -6,6 +6,8 @@ import TermsConditionsForm from "./TermsConditionsForm;";
 import generatePurchaseOrderPDF from "./Generate";
 import generatePOPDF from "./GeneratePOPDF";
 import PopupModal from "../PopupModal";
+import Select from "react-select";
+
 const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
   const [form, setForm] = useState({
     quotationId: "",
@@ -50,9 +52,12 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
 
   const fetchQuotations = async () => {
     try {
-      const res = await axios.get(`${API.PURCHASE_API}/supplier_quotation/Allquotations`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${API.PURCHASE_API}/supplier_quotation/Allquotations`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.data && Array.isArray(res.data.data)) {
         setQuotations(res.data.data);
       }
@@ -64,9 +69,12 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
 
   const fetchCompanyDetails = async (quotationId) => {
     try {
-      const res = await axios.get(`${API.PURCHASE_API}/supplier_quotation/vendor_details/${quotationId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${API.PURCHASE_API}/supplier_quotation/vendor_details/${quotationId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const org = res.data?.data?.organization || {};
       setCompany({
         name: org.name || "",
@@ -91,13 +99,19 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
     if (!id) return;
     try {
       // Fetch main quotation details
-      const res = await axios.get(`${API.PURCHASE_API}/supplier_quotation/Allquotations/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `${API.PURCHASE_API}/supplier_quotation/Allquotations/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       // Fetch vendor details (NEW API)
-      const vendorRes = await axios.get(`${API.PURCHASE_API}/supplier_quotation/vendor_details/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const vendorRes = await axios.get(
+        `${API.PURCHASE_API}/supplier_quotation/vendor_details/${id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       // Merge both API responses
       const detail = res.data?.data || {};
@@ -290,27 +304,36 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
         po_file: fileUrl,
       };
 
-      await axios.post(`${API.PURCHASE_API}/purchase_order/createPO`, poPayload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.post(
+        `${API.PURCHASE_API}/purchase_order/createPO`,
+        poPayload,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
       // Try to send the PO via UCS (same approach as PurchaseProcess)
       try {
         // 1) Get modules to determine uniqueIdentifierName
-        const modulesRes = await axios.get(`${API.API_BASE}/ucs/test/api/modules`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const modulesRes = await axios.get(
+          `${API.API_BASE}/ucs/test/api/modules`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         const modules = modulesRes.data;
         const productModule = Array.isArray(modules)
           ? modules.find((m) => m.applicationName === "Product Management")
           : null;
-        const uniqueIdentifierName = productModule?.uniqueIdentifierName || "PM-R-SR";
+        const uniqueIdentifierName =
+          productModule?.uniqueIdentifierName || "PM-R-SR";
 
         // 2) Determine recipient email and contact person
         const recipientEmail =
           supplier?.email || supplier?.email_id || company?.email || "";
 
-        const contactPerson = supplier?.name || company?.name || vendorName || "Contact Person";
+        const contactPerson =
+          supplier?.name || company?.name || vendorName || "Contact Person";
 
         if (recipientEmail) {
           const payload = {
@@ -323,9 +346,13 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
           };
 
           try {
-            const sendRes = await axios.post(`${API.API_BASE}/ucs/test/ucs/send`, payload, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+            const sendRes = await axios.post(
+              `${API.API_BASE}/ucs/test/ucs/send`,
+              payload,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
 
             if (
               sendRes.data === "Sent Successfully" ||
@@ -336,14 +363,16 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
               setModalProps({
                 type: "success",
                 title: "Success!",
-                message: "Purchase Order generated, uploaded and sent successfully.",
+                message:
+                  "Purchase Order generated, uploaded and sent successfully.",
                 onClose: () => setShowModal(false),
               });
             } else {
               setModalProps({
                 type: "warning",
                 title: "PO Created",
-                message: "Purchase Order created but sending via UCS failed. Please try sending manually.",
+                message:
+                  "Purchase Order created but sending via UCS failed. Please try sending manually.",
                 onClose: () => setShowModal(false),
               });
             }
@@ -352,7 +381,8 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
             setModalProps({
               type: "warning",
               title: "PO Created",
-              message: "Purchase Order created but sending via UCS failed. Please try sending manually.",
+              message:
+                "Purchase Order created but sending via UCS failed. Please try sending manually.",
               onClose: () => setShowModal(false),
             });
           }
@@ -361,7 +391,8 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
           setModalProps({
             type: "info",
             title: "PO Created",
-            message: "Purchase Order created. No vendor email found to send automatically.",
+            message:
+              "Purchase Order created. No vendor email found to send automatically.",
             onClose: () => setShowModal(false),
           });
         }
@@ -451,21 +482,44 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
           <div className="flex gap-4 mb-6">
             <div className="flex-1">
               <label className="block mb-1 font-medium">Quotation ID</label>
-              <select
-                className="w-full border rounded-lg px-3 py-2"
-                value={quotationId}
-                onChange={(e) => {
-                  setQuotationId(e.target.value);
-                  fetchQuotationDetails(e.target.value);
+              <Select
+                options={quotations.map((q) => ({
+                  value: q.quotation_id,
+                  label: q.quotation_id,
+                }))}
+                value={
+                  quotationId
+                    ? {
+                        value: quotationId,
+                        label: quotationId,
+                      }
+                    : null
+                }
+                onChange={(option) => {
+                  setQuotationId(option?.value || "");
+                  fetchQuotationDetails(option?.value || "");
                 }}
-              >
-                <option value="">Select Quotation</option>
-                {quotations.map((q) => (
-                  <option key={q.quotation_id} value={q.quotation_id}>
-                    {q.quotation_id}
-                  </option>
-                ))}
-              </select>
+                placeholder="Select or Search Quotation"
+                isClearable
+                isSearchable
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderRadius: "0.5rem",
+                    border: "1px solid #d1d5db",
+                    padding: "2px",
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? "#0057FF"
+                      : state.isFocused
+                      ? "#e0e7ff"
+                      : "white",
+                    color: state.isSelected ? "white" : "black",
+                  }),
+                }}
+              />
               {searchError && (
                 <div className="text-red-500 text-sm mt-1">{searchError}</div>
               )}
@@ -586,7 +640,7 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
               className="flex-1 bg-green-600 text-white py-2 rounded-lg font-semibold"
               onClick={handleGeneratePO}
             >
-              Save and Send 
+              Save and Send
             </button>
             {/* <button
               type="submit"
