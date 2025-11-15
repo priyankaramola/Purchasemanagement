@@ -5,15 +5,14 @@ import { Icon } from "@iconify/react";
 import DownloadTableButtons from "../components/Downloadpdfexcel";
 import { toast } from "react-toastify";
 import { ToastContainer } from "react-toastify";
-import Select from "react-select";
-import "react-toastify/dist/ReactToastify.css";
+
 const Quotation = () => {
   const createdBy = sessionStorage.getItem("userId");
-  const getToken = () => sessionStorage.getItem("token");
+   const getToken = () => sessionStorage.getItem("token");
   const token = getToken();
   const { userId } = useParams();
   const [rfpOptions, setRfpOptions] = useState([]);
-  const [selectedRfp, setSelectedRfp] = useState("null");
+  const [selectedRfp, setSelectedRfp] = useState("");
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -35,30 +34,6 @@ const Quotation = () => {
     { header: "Vendor", accessor: "vendor_name" },
     { header: "Status", accessor: "status" },
   ];
-  // const handleViewHistory = async (quotationId) => {
-  //   try {
-  //     const response = await axios.get(
-  //       `${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/history/${quotationId}`,
-  //       {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //       }
-  //     );
-
-  //     const historyData = response.data?.data || [];
-  //     console.log("History Data:", historyData);
-
-  //     setHistory(historyData); // store only the array
-  //     setShowHistoryModal(true); // open modal
-  //   } catch (error) {
-  //     console.error("Error fetching quotation history:", error);
-  //     const errMsg =
-  //       error.response?.data?.message ||
-  //       error.response?.data?.error ||
-  //       "Failed to fetch quotation history.";
-  //     toast.error(errMsg);
-  //   }
-  // };
-
   const handleViewHistory = async (quotationId) => {
     try {
       const response = await axios.get(
@@ -68,33 +43,19 @@ const Quotation = () => {
         }
       );
 
-      // Check if success is false
-      if (response.data?.success === false) {
-        toast.info(
-          response.data?.message || "No history found for this quotation."
-        );
-        return;
-      }
-
       const historyData = response.data?.data || [];
       console.log("History Data:", historyData);
 
-      // Show toast if no history data
-      if (historyData.length === 0) {
-        toast.info("No history found for this quotation.");
-        return;
-      }
-
-      setHistory(historyData);
-      setShowHistoryModal(true);
-    } catch (error) {
-      console.error("Error fetching quotation history:", error);
-      const errMsg =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Failed to fetch quotation history.";
-      toast.error(errMsg);
-    }
+      setHistory(historyData); // store only the array
+      setShowHistoryModal(true); // open modal
+    }catch (error) {
+  console.error("Error fetching quotation history:", error);
+  const errMsg =
+    error.response?.data?.message ||
+    error.response?.data?.error ||
+    "Failed to fetch quotation history.";
+  toast.error(errMsg);
+}
   };
 
   // Fetch RFP options on mount
@@ -107,11 +68,7 @@ const Quotation = () => {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        const options = (res.data || []).map((rfp) => ({
-          value: rfp.rfp_id,
-          label: rfp.rfp_id,
-        }));
-        setRfpOptions(options);
+        setRfpOptions(res.data || []);
       } catch (err) {
         setRfpOptions([]);
       }
@@ -126,15 +83,14 @@ const Quotation = () => {
       return;
     }
     setLoading(true);
+    // In your useEffect for fetching quotations:
     axios
-      .get(
-        `${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/rfp/${selectedRfp.value}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
+      .get(`${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/rfp/${selectedRfp}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then((res) => {
         const data = Array.isArray(res.data.data) ? res.data.data : [];
+        // Map documents for popup
         const mapped = data.map((row) => ({
           ...row,
           documents: row.required_doc
@@ -144,6 +100,7 @@ const Quotation = () => {
               }))
             : [],
         }));
+
         setQuotations(mapped);
       })
       .catch(() => setQuotations([]))
@@ -233,8 +190,7 @@ const Quotation = () => {
     }
 
     try {
-      await axios.put(
-        `${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/update-status/${selectedQuotation.quotation_id}`,
+      await axios.put(`${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/update-status/${selectedQuotation.quotation_id}`,
         {
           status: newStatus,
           user_id: createdBy,
@@ -271,12 +227,9 @@ const Quotation = () => {
     status: row.status || "--",
   }));
   return (
+    
     <div className="p-6  min-h-[70vh] rounded-xl">
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-      />
+            {/* <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} /> */}
 
       <div className="flex gap-4 mb-4 items-center">
         {/* Filters */}
@@ -295,22 +248,18 @@ const Quotation = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select
-          options={rfpOptions}
+        <select
+          className="border rounded px-3 py-2 w-48"
           value={selectedRfp}
-          onChange={setSelectedRfp}
-          placeholder="Select RFP ID"
-          isClearable
-          isSearchable
-          className="w-48"
-          styles={{
-            control: (base) => ({
-              ...base,
-              border: "1px solid #d1d5db",
-              borderRadius: "0.375rem",
-            }),
-          }}
-        />
+          onChange={(e) => setSelectedRfp(e.target.value)}
+        >
+          <option value="">Select RFP ID</option>
+          {rfpOptions.map((rfp) => (
+            <option key={rfp.rfp_id} value={rfp.rfp_id}>
+              {rfp.rfp_id}
+            </option>
+          ))}
+        </select>
         <div className="flex items-center border rounded px-2 py-1">
           <input
             type="date"
@@ -344,7 +293,7 @@ const Quotation = () => {
       </div>
 
       {/* Table */}
-      <div
+       <div
         className="overflow-x-auto rounded-lg shadow bg-white p-4"
         style={{ maxHeight: 400, overflowY: "auto", minWidth: 900 }}
       >
@@ -364,7 +313,7 @@ const Quotation = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
+                <tr>
                 <td colSpan={8} className="text-center py-8 text-gray-400">
                   Please wait... Selected RFP is loading quotations.
                 </td>
@@ -372,13 +321,15 @@ const Quotation = () => {
             ) : filteredQuotations.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center py-6 text-gray-400">
-                  Select an RFP first to see quotations, or no quotations are
-                  available.
+                  Select an RFP first to see quotations, or no quotations are available.
                 </td>
               </tr>
             ) : (
               paginatedData.map((row, idx) => (
-                <tr key={row.quotation_id || idx} className="odd:bg-blue-50">
+                <tr
+                  key={row.quotation_id || idx}
+                  className="odd:bg-blue-50"
+                >
                   <td className="p-2">{idx + 1}.</td>
                   <td className="p-2">
                     {row.quotation_date
@@ -392,9 +343,7 @@ const Quotation = () => {
                     {row.quotation_id ? (
                       <button
                         className="text-blue-600 underline"
-                        onClick={() =>
-                          navigate(`/quotation/${row.quotation_id}`)
-                        }
+                        onClick={() => navigate(`/quotation/${row.quotation_id}`)}
                       >
                         {row.quotation_id}
                       </button>
@@ -426,10 +375,7 @@ const Quotation = () => {
                             const initialStatus = {};
                             // documents may be objects {name, url} or plain urls; normalize to use url as key
                             row.documents.forEach((doc) => {
-                              const key =
-                                (typeof doc === "string" ? doc : doc?.url) ||
-                                doc?.name ||
-                                "";
+                              const key = (typeof doc === "string" ? doc : doc?.url) || doc?.name || "";
                               if (key) initialStatus[key] = "Qualified";
                             });
                             setDocStatus(initialStatus);
@@ -505,6 +451,7 @@ const Quotation = () => {
             </div>
           </div>
         )}
+
         {showDocModal && selectedQuotation && (
           <div
             style={{
@@ -552,18 +499,11 @@ const Quotation = () => {
                 selectedQuotation.documents.map((doc, idx) => {
                   // doc may be a string (url) or an object { name, url }
                   const docUrl = typeof doc === "string" ? doc : doc?.url;
-                  const docName =
-                    (typeof doc === "string"
-                      ? docUrl?.split("/").pop()
-                      : doc?.name) ||
-                    docUrl?.split("/").pop() ||
-                    `Document-${idx + 1}`;
+                  const docName = (typeof doc === "string" ? docUrl?.split("/").pop() : doc?.name) || docUrl?.split("/").pop() || `Document-${idx + 1}`;
                   const statusKey = docUrl || docName;
                   return (
                     <div key={idx} style={{ marginBottom: 18 }}>
-                      <div style={{ fontWeight: 500, marginBottom: 6 }}>
-                        Document name
-                      </div>
+                      <div style={{ fontWeight: 500, marginBottom: 6 }}>Document name</div>
                       <div
                         style={{
                           border: "1px solid #eee",
@@ -575,20 +515,8 @@ const Quotation = () => {
                           marginBottom: 8,
                         }}
                       >
-                        <img
-                          src="pdf-icon.png"
-                          alt="PDF"
-                          style={{ width: 24, height: 24 }}
-                        />
-                        <a
-                          href={docUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            color: "#0052CC",
-                            textDecoration: "underline",
-                          }}
-                        >
+                        <img src="pdf-icon.png" alt="PDF" style={{ width: 24, height: 24 }} />
+                        <a href={docUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#0052CC", textDecoration: "underline" }}>
                           {docName}
                         </a>
                       </div>
@@ -598,12 +526,7 @@ const Quotation = () => {
                             type="radio"
                             name={`status-${idx}`}
                             checked={docStatus[statusKey] === "Qualified"}
-                            onChange={() =>
-                              setDocStatus((prev) => ({
-                                ...prev,
-                                [statusKey]: "Qualified",
-                              }))
-                            }
+                            onChange={() => setDocStatus((prev) => ({ ...prev, [statusKey]: "Qualified" }))}
                           />{" "}
                           Qualified
                         </label>
@@ -612,12 +535,7 @@ const Quotation = () => {
                             type="radio"
                             name={`status-${idx}`}
                             checked={docStatus[statusKey] === "Disqualified"}
-                            onChange={() =>
-                              setDocStatus((prev) => ({
-                                ...prev,
-                                [statusKey]: "Disqualified",
-                              }))
-                            }
+                            onChange={() => setDocStatus((prev) => ({ ...prev, [statusKey]: "Disqualified" }))}
                           />{" "}
                           Disqualified
                         </label>
@@ -730,8 +648,7 @@ const Quotation = () => {
                   }}
                   onClick={async () => {
                     // Update status to Negotiation
-                    await axios.put(
-                      `${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/update-status/${selectedQuotation.quotation_id}`,
+                    await axios.put(`${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/update-status/${selectedQuotation.quotation_id}`,
                       {
                         status: "Negotiation",
                         user_id: createdBy,
@@ -762,14 +679,10 @@ const Quotation = () => {
                   }}
                   onClick={async () => {
                     // Update status to Rejected
-                    await axios.put(
-                      `${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/update-status/${selectedQuotation.quotation_id}`,
+                    await axios.put(`${process.env.REACT_APP_PURCHASE_API}/supplier_quotation/quotations/update-status/${selectedQuotation.quotation_id}`,
                       {
                         status: "Rejected",
                         user_id: createdBy,
-                      },
-                      {
-                        headers: { Authorization: `Bearer ${token}` },
                       }
                     );
                     setQuotations((prev) =>

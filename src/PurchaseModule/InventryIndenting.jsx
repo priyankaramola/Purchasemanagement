@@ -7,9 +7,7 @@ import Select from "react-select";
 import PopupModal from "./PopupModal";
 import DownloadTableButtons from "./components/Downloadpdfexcel";
 import { FaFilePdf, FaRegFileAlt } from "react-icons/fa"; // <-- added FaRegFileAlt
-import { createRoot } from "react-dom/client";
-import RfpGenerator from "./components/RfpGenerator";
-import html2pdf from "html2pdf.js";
+import { generateRfpPdf } from "./components/RfpTemplate";
 
 const InventryIndenting = () => {
   const getToken = () => sessionStorage.getItem("token");
@@ -697,7 +695,7 @@ const InventryIndenting = () => {
       });
       const res = await axios.get(
         API.DMS_MAPPING_CHECK ||
-          "https://devapi.softtrails.net/saas/dms/test/mapping/check",
+          "https://devapi.softtrails.net/saas/mapping/check",
         {
           params: { service_name, doctype, doc_name },
           headers: { Authorization: `Bearer ${token}` },
@@ -825,10 +823,7 @@ const InventryIndenting = () => {
         return; // stop further processing until End Date is provided
       }
 
-      // === Helper to upload a file to DMS ===
-      // uploadToDMS now accepts an optional `docName` parameter which is used
-      // as the `doc_name` when fetching the DMS publish_id mapping. If not
-      // provided, the docType is used as the doc_name (backwards-compatible).
+    
       const uploadToDMS = async (file, docType, folderName, docName) => {
         const publish_id = await getDmsPublishId(
           "purchase",
@@ -854,7 +849,7 @@ const InventryIndenting = () => {
 
         const uploadRes = await axios.post(
           API.DMS_UPLOAD ||
-            "https://devapi.softtrails.net/saas/dms/test/dmsapi/upload-documents",
+            "https://devapi.softtrails.net/saas/dmsapi/upload-documents",
           formData,
           {
             headers: {
@@ -890,29 +885,14 @@ const InventryIndenting = () => {
         );
       }
 
-      // === 3. Generate RFP PDF from template ===
-      const tempDiv = document.createElement("div");
-      document.body.appendChild(tempDiv);
-      const root = createRoot(tempDiv);
-      root.render(<RfpGenerator formData={formData} />);
-
-      const pdfBlob = await html2pdf()
-        .set({
-          margin: 10,
-          filename: "RFP_Template.pdf",
-          jsPDF: { unit: "mm", format: "a4" },
-        })
-        .from(tempDiv)
-        .outputPdf("blob");
-
-      document.body.removeChild(tempDiv);
-
-      // Create a File object for DMS upload
-      const pdfFile = new File([pdfBlob], "RFP_Template.pdf", {
-        type: "application/pdf",
+      // === 3. Generate RFP PDF using generateRfpPdf (which already returns a File object) ===
+      const pdfFile = await generateRfpPdf({
+        ...formData,
+        rfpId,
+        productItems,
+        assetDetails,
       });
 
-      // === 4. Upload the generated RFP PDF (doctype 'RFP', doc_name 'Generated RFP') ===
       const generatedRfpUrl = await uploadToDMS(
         pdfFile,
         "RFP",
@@ -920,7 +900,6 @@ const InventryIndenting = () => {
         "Generated RFP"
       );
 
-      // === 5. Upload additional document if selected ===
       let additionalDocUrl = "";
       if (formData.additionalDoc instanceof File) {
         additionalDocUrl = await uploadToDMS(
@@ -949,6 +928,8 @@ const InventryIndenting = () => {
         rfp_file_link: generatedRfpUrl || "",
       };
 
+
+      // === 6. Call create_rfp API ===
       const rfpResponse = await axios.post(
         `${API.PURCHASE_API}/rfps/create_rfp`,
         rfpPayload,
@@ -1674,3 +1655,4 @@ const InventryIndenting = () => {
 };
 
 export default InventryIndenting;
+

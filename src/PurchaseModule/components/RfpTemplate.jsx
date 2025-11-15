@@ -1,9 +1,11 @@
+
+
 import { useEffect } from "react";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import templateBg from "../../assests/template.jpg"; // your uploaded background image
-import SoftTrailsLogo from "../../assests/SoftTrails.png"; // SoftTrails logo
+import templateBg from "../../assests/template.jpg";
+import SoftTrailsLogo from "../../assests/SoftTrails.png";
 
-export async function generateRfpPdf(formData = {}) {
+export async function RfpTemplate(formData = {}) {
   const {
     rfpId = "ERY000012",
     organization = "Higher India Private Limited",
@@ -275,6 +277,12 @@ export async function generateRfpPdf(formData = {}) {
   return file;
 }
 
+// Provide a named export that other modules can import
+export async function generateRfpPdf(formData = {}) {
+  // RfpTemplate already returns a File object
+  return await RfpTemplate(formData);
+}
+
 const RfpGenerator = ({ formData = {}, onFileGenerated }) => {
   useEffect(() => {
     const create = async () => {
@@ -287,4 +295,4 @@ const RfpGenerator = ({ formData = {}, onFileGenerated }) => {
   return null;
 };
 
-export default RfpGenerator;
+export default RfpTemplate;
