@@ -5,18 +5,87 @@ import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import templateBg from "../../assests/template.jpg";
 import SoftTrailsLogo from "../../assests/SoftTrails.png";
 
-export async function RfpTemplate(formData = {}) {
-  const {
-    rfpId = "ERY000012",
-    organization = "Higher India Private Limited",
-    address = "2/1 Rajpur road Survey Chowk, Dehradun. 248001",
-    issueDate = "25 May 2025",
-    title = "Project Title",
-    description = "No additional description provided.",
-    openDate = "25 May 2025",
-    endDate = "25 June 2025",
-    logoImg, // optional logo image (URL or base64)
-  } = formData;
+/**
+ * Formats an ISO date string (YYYY-MM-DD) to a readable format (DD MMM YYYY)
+ * @param {string} dateString - ISO date string or any date string
+ * @returns {string} Formatted date string or empty string if invalid
+ */
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString; // Return original if invalid
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  } catch (error) {
+    return dateString; // Return original string if parsing fails
+  }
+};
+
+/**
+ * Safely extracts a value from rfpData with fallback
+ * @param {object} rfpData - The RFP data object
+ * @param {string|string[]} keys - Single key or array of keys to try
+ * @param {string} fallback - Fallback value (default: empty string)
+ * @returns {string} The extracted value or fallback
+ */
+const safeGet = (rfpData, keys, fallback = "") => {
+  if (!rfpData) return fallback;
+  const keyArray = Array.isArray(keys) ? keys : [keys];
+  for (const key of keyArray) {
+    if (rfpData[key] !== undefined && rfpData[key] !== null && rfpData[key] !== "") {
+      return String(rfpData[key]);
+    }
+  }
+  return fallback;
+};
+
+export async function RfpTemplate(rfpData = {}) {
+  // Accept either rfpData prop or formData (for backward compatibility)
+  const formData = rfpData || {};
+
+  // Extract all values dynamically with safe fallbacks (no hardcoded defaults)
+  const rfpId = safeGet(formData, ["rfpId", "rfp_id", "RFP_ID"]);
+  const organization = safeGet(formData, ["organization", "Organization_Name"]);
+  const address = "2/1 Rajpur road Survey Chowk, Dehradun. 248001" || safeGet(formData, ["address", "Address"]);
+  const title = safeGet(formData, ["title", "Title"]);
+  
+  // Handle description - can be string or object with description/notes
+  let description = "";
+  if (formData?.additional_description) {
+    const addDesc = formData.additional_description;
+    if (typeof addDesc === "object") {
+      description = safeGet(addDesc, ["description", "Description"]) || "";
+      const notes = safeGet(addDesc, ["notes", "Notes"]);
+      if (notes) {
+        description = description ? `${description}\n\n${notes}` : notes;
+      }
+    } else {
+      description = String(addDesc);
+    }
+  } else {
+    description = safeGet(formData, ["description", "Description"]);
+  }
+  
+  // Handle dates - format from ISO strings if needed
+  const issuedDateRaw = safeGet(formData, ["issuedDate", "Start_Date", "issueDate", "startDate"]);
+  const issueDate = issuedDateRaw ? formatDate(issuedDateRaw) : "";
+  
+  const dueDateRaw = safeGet(formData, ["dueDate", "End_Date", "endDate"]);
+  const endDate = dueDateRaw ? formatDate(dueDateRaw) : "";
+  
+  // Open date defaults to issue date if not provided
+  const openDateRaw = safeGet(formData, ["openDate", "open_date"]);
+  const openDate = openDateRaw ? formatDate(openDateRaw) : issueDate;
+  
+  // Logo handling - prefer logoUrl, then logo, then logoImg
+  const logoUrl = safeGet(formData, ["logoUrl", "Logo", "logo", "logoImg"]);
 
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4 size (Page 1)
@@ -44,55 +113,92 @@ export async function RfpTemplate(formData = {}) {
   };
 
   // ========== HEADER ==========
-  drawText(`RFP ID : ${rfpId}`, 30, 800, 14, true);
+  if (rfpId) {
+    drawText(`RFP ID : ${rfpId}`, 30, 800, 14, true);
+  }
 
   // ========== ORGANIZATION DETAILS ==========
-  drawText(organization, 40, 650, 14, true);
+  if (organization) {
+    drawText(organization, 40, 650, 14, true);
+  }
 
-  // address (multi-line)
-  const addressLines = address.split(/\n|,/).map((a) => a.trim()).filter(Boolean);
+  // address (multi-line) - format address with proper line breaks
+  // Format: "2/1 Rajpur road Survey Chowk" on first line, "Dehradun. 248001" on second line
   let yPos = 630;
-  addressLines.forEach((line) => {
-    drawText(line, 40, yPos, 14);
-    yPos -= 20;
-  });
+  if (address) {
+    let addressLines = [];
+    const addrStr = String(address).trim();
+    
+    // First check for explicit newlines
+    if (addrStr.includes('\n')) {
+      addressLines = addrStr.split('\n').map((a) => a.trim()).filter(Boolean);
+    }
+    // Split by comma - this handles format like "2/1 Rajpur road Survey Chowk, Dehradun. 248001"
+    else if (addrStr.includes(',')) {
+      addressLines = addrStr.split(',').map((a) => a.trim()).filter(Boolean);
+    }
+    // Single line - use as is
+    else {
+      addressLines = [addrStr];
+    }
+    
+    addressLines.forEach((line) => {
+      if (line) {
+        drawText(line, 40, yPos, 14);
+        yPos -= 20;
+      }
+    });
+  }
 
   // date below address
-  drawText(issueDate, 40, yPos - 5, 14);
+  if (issueDate) {
+    drawText(issueDate, 40, yPos - 5, 14);
+  }
 
   // ========== TITLE ==========
   drawText("Request For Proposal (RFP)", 40, 460, 26, true);
 
   // Project Title
-  drawText(title, 40, 400, 16, true);
+  if (title) {
+    drawText(title, 40, 400, 16, true);
+  }
 
   // ========== DESCRIPTION ==========
-  const maxCharsPerLine = 55;
-  const words = description.split(" ");
-  const lines = [];
-  let currentLine = "";
-  for (const word of words) {
-    const testLine = currentLine + (currentLine ? " " : "") + word;
-    if (testLine.length > maxCharsPerLine && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
+  if (description) {
+    const maxCharsPerLine = 55;
+    const words = String(description).split(" ");
+    const lines = [];
+    let currentLine = "";
+    for (const word of words) {
+      const testLine = currentLine + (currentLine ? " " : "") + word;
+      if (testLine.length > maxCharsPerLine && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
     }
-  }
-  if (currentLine) lines.push(currentLine);
+    if (currentLine) lines.push(currentLine);
 
-  let descY = 370;
-  lines.slice(0, 6).forEach((line) => {
-    drawText(line, 40, descY, 14);
-    descY -= 14;
-  });
+    let descY = 370;
+    lines.slice(0, 6).forEach((line) => {
+      if (line) {
+        drawText(line, 40, descY, 14);
+        descY -= 14;
+      }
+    });
+  }
 
   // ========== FOOTER ==========
-  drawText(`RFP open date : ${openDate}`, 40, 140, 14, true);
-  drawText(`RFP end date : ${endDate}`, 40, 120, 14, true);
+  if (openDate) {
+    drawText(`RFP open date : ${openDate}`, 40, 140, 14, true);
+  }
+  if (endDate) {
+    drawText(`RFP end date : ${endDate}`, 40, 120, 14, true);
+  }
 
   // ========== LOGO (optional) ==========
+  // Always try to load SoftTrails logo (default branding)
   try {
     const logoBytes = await fetch(SoftTrailsLogo).then((res) => res.arrayBuffer());
     const logoImage = await pdfDoc.embedPng(logoBytes);
@@ -108,11 +214,12 @@ export async function RfpTemplate(formData = {}) {
     console.log("SoftTrails logo load failed:", err);
   }
 
-  if (logoImg) {
+  // Load custom organization logo if provided (no text fallback)
+  if (logoUrl) {
     try {
-      const imgBytes = await fetch(logoImg).then((res) => res.arrayBuffer());
+      const imgBytes = await fetch(logoUrl).then((res) => res.arrayBuffer());
       const img =
-        logoImg.toLowerCase().endsWith(".png")
+        logoUrl.toLowerCase().endsWith(".png") || logoUrl.includes("data:image/png")
           ? await pdfDoc.embedPng(imgBytes)
           : await pdfDoc.embedJpg(imgBytes);
       const pageWidth = page.getSize().width;
@@ -181,19 +288,51 @@ export async function RfpTemplate(formData = {}) {
   // Meta two-column section
   const gapX = 40;
   const colW = (pw - marginX * 2 - gapX) / 2;
-  // Resolve dynamic values (fall back to placeholders)
-  const resolvedIndentId = formData?.indentId || formData?.id || "IND-2024-001";
-  const resolvedRfpId = rfpId || formData?.rfpId || "ERY000012";
+  // Resolve dynamic values - check multiple possible locations for indent ID
+  // Check direct fields first
+  let resolvedIndentId = safeGet(formData, [
+    "indentId", 
+    "indent_id", 
+    "indentingId",
+    "indenting_id",
+    "id"
+  ]);
+  
+  // If not found, check nested objects
+  if (!resolvedIndentId) {
+    if (formData?.selectedRequest) {
+      resolvedIndentId = formData.selectedRequest.id || formData.selectedRequest.indent_id || formData.selectedRequest.indentId;
+    }
+    if (!resolvedIndentId && formData?.item) {
+      resolvedIndentId = formData.item.id || formData.item.indent_id || formData.item.indentId;
+    }
+  }
+  
+  const resolvedRfpId = rfpId || safeGet(formData, ["rfpId", "rfp_id", "RFP_ID"]);
 
-  // Left column
+  // Left column - Indent ID
   drawText2({ text: "Indent ID", x: marginX, y: cursorY, size: 11, color: textMuted });
-  drawText2({ text: resolvedIndentId, x: marginX, y: cursorY - 18, size: 12, bold: true, color: textDark });
+  drawText2({ 
+    text: resolvedIndentId || "-", 
+    x: marginX, 
+    y: cursorY - 18, 
+    size: 12, 
+    bold: true, 
+    color: textDark 
+  });
   drawRule(marginX, cursorY - 22, colW, 1, lightGray);
 
-  // Right column
+  // Right column - RFP ID
   const rightX = marginX + colW + gapX;
   drawText2({ text: "RFP ID", x: rightX, y: cursorY, size: 11, color: textMuted });
-  drawText2({ text: resolvedRfpId, x: rightX, y: cursorY - 18, size: 12, bold: true, color: textDark });
+  drawText2({ 
+    text: resolvedRfpId || "-", 
+    x: rightX, 
+    y: cursorY - 18, 
+    size: 12, 
+    bold: true, 
+    color: textDark 
+  });
   drawRule(rightX, cursorY - 22, colW, 1, lightGray);
 
   // Move the materials section a bit further down to match the
@@ -273,14 +412,16 @@ export async function RfpTemplate(formData = {}) {
   // ========== OUTPUT ==========
   const pdfBytes = await pdfDoc.save();
   const blob = new Blob([pdfBytes], { type: "application/pdf" });
-  const file = new File([blob], `RFP_${rfpId}.pdf`, { type: "application/pdf" });
+  const fileName = rfpId ? `RFP_${rfpId}.pdf` : `RFP_${Date.now()}.pdf`;
+  const file = new File([blob], fileName, { type: "application/pdf" });
   return file;
 }
 
 // Provide a named export that other modules can import
-export async function generateRfpPdf(formData = {}) {
+// Accepts either rfpData object or individual props (for backward compatibility)
+export async function generateRfpPdf(rfpData = {}) {
   // RfpTemplate already returns a File object
-  return await RfpTemplate(formData);
+  return await RfpTemplate(rfpData);
 }
 
 const RfpGenerator = ({ formData = {}, onFileGenerated }) => {

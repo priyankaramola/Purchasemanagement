@@ -886,11 +886,16 @@ const InventryIndenting = () => {
       }
 
       // === 3. Generate RFP PDF using generateRfpPdf (which already returns a File object) ===
+      // Get indent ID from selectedRequest if available
+      const indentId = selectedRequest?.id || selectedRequest?.indent_id || selectedRequest?.indentId;
       const pdfFile = await generateRfpPdf({
         ...formData,
         rfpId,
         productItems,
         assetDetails,
+        indentId: indentId || selectedRequest?.id || selectedRequest?.indent_id,
+        indent_id: indentId || selectedRequest?.id || selectedRequest?.indent_id,
+        id: indentId || selectedRequest?.id || selectedRequest?.indent_id,
       });
 
       const generatedRfpUrl = await uploadToDMS(
