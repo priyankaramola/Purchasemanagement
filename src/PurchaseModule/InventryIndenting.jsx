@@ -41,6 +41,7 @@ const InventryIndenting = () => {
   const [status, setStatus] = useState("");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isRequestMaterialOpen, setIsRequestMaterialOpen] = useState(false);
+  const [currentIndentId, setCurrentIndentId] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [categoryOptions, setCategoryOptions] = useState([]);
   const createdBy = sessionStorage.getItem("userId");
@@ -94,6 +95,7 @@ const InventryIndenting = () => {
     setSelectedSpecFileName(""); // ✅ reset specification file name
     setProductItems([]); // Clear product items
     setSelectedItems([]); // Clear selected items
+    setCurrentIndentId(null); // Clear current indent ID
   };
 
   const handleIconClick = () => {
@@ -336,6 +338,10 @@ const InventryIndenting = () => {
       selectedRequest?.indent_id ??
       selectedRequest?.indentId;
 
+    // Store the current indent ID to be used in handleSave
+    console.log("✅ handleGenerateRFPClick - Setting currentIndentId:", indentingId);
+    setCurrentIndentId(indentingId);
+
     try {
       const sourceData = item || selectedRequest;
       let products = [];
@@ -390,8 +396,10 @@ const InventryIndenting = () => {
       );
 
       if (response.data.RFP_ID) {
+        console.log("🔑 RFP_ID received:", response.data.RFP_ID);
         setRfpId(response.data.RFP_ID);
       } else {
+        console.log("⚠️ No RFP_ID in response");
         setRfpId(null);
       }
 
@@ -825,6 +833,7 @@ const InventryIndenting = () => {
 
     
       const uploadToDMS = async (file, docType, folderName, docName) => {
+        console.log(`📤 Uploading to DMS:`, { docType, fileName: file.name, docName });
         const publish_id = await getDmsPublishId(
           "purchase",
           docType,
@@ -866,8 +875,20 @@ const InventryIndenting = () => {
 
       // === 1. Upload logo if a file ===
       let logoUrl = formData.logoUrl;
+      let logoBase64 = ""; // NEW: Will store Base64 version for PDF embedding
       if (formData.logo instanceof File) {
-        // Upload ORGANIZATION_LOGO first
+        // Convert logo to Base64 for use in PDF (NO CORS issues!)
+        const reader = new FileReader();
+        logoBase64 = await new Promise((resolve, reject) => {
+          reader.onload = () => {
+            console.log("📸 Logo converted to Base64");
+            resolve(reader.result); // This is the Base64 string with data URL prefix
+          };
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(formData.logo);
+        });
+        
+        // Also upload ORGANIZATION_LOGO to DMS for backup
         logoUrl = await uploadToDMS(
           formData.logo,
           "ORGANIZATION_LOGO",
@@ -886,16 +907,25 @@ const InventryIndenting = () => {
       }
 
       // === 3. Generate RFP PDF using generateRfpPdf (which already returns a File object) ===
-      // Get indent ID from selectedRequest if available
-      const indentId = selectedRequest?.id || selectedRequest?.indent_id || selectedRequest?.indentId;
+      // Use currentIndentId which was set in handleGenerateRFPClick
+      const indentId = currentIndentId || selectedRequest?.id || selectedRequest?.indent_id || selectedRequest?.indentId;
+      console.log("📋 handleSave - Generating PDF with:", { 
+        currentIndentId, 
+        indentId, 
+        rfpId,
+        rfpIdState: rfpId,
+        hasLogoBase64: !!logoBase64  // NEW: Show Base64 is available
+      });
       const pdfFile = await generateRfpPdf({
         ...formData,
         rfpId,
+        logoUrl, // Pass the resolved logoUrl (either uploaded or from formData)
+        logoBase64, // NEW: Pass Base64 version (fastest - no CORS!)
         productItems,
         assetDetails,
-        indentId: indentId || selectedRequest?.id || selectedRequest?.indent_id,
-        indent_id: indentId || selectedRequest?.id || selectedRequest?.indent_id,
-        id: indentId || selectedRequest?.id || selectedRequest?.indent_id,
+        indentId: indentId,
+        indent_id: indentId,
+        id: indentId,
       });
 
       const generatedRfpUrl = await uploadToDMS(
@@ -1660,4 +1690,3 @@ const InventryIndenting = () => {
 };
 
 export default InventryIndenting;
-
