@@ -160,7 +160,6 @@ const FinancialBudget = () => {
   };
 
   const handleDelete = (budgetId) => {
-    console.log(`Delete budget with ID: ${budgetId}`);
   };
   const verifyToken = async () => {
     if (!token) {

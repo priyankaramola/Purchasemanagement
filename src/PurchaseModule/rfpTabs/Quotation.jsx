@@ -44,10 +44,9 @@ const Quotation = () => {
       );
 
       const historyData = response.data?.data || [];
-      console.log("History Data:", historyData);
 
-      setHistory(historyData); // store only the array
-      setShowHistoryModal(true); // open modal
+      setHistory(historyData); 
+      setShowHistoryModal(true);
     }catch (error) {
   console.error("Error fetching quotation history:", error);
   const errMsg =

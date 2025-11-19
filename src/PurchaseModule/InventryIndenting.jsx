@@ -119,122 +119,7 @@ const InventryIndenting = () => {
     }
   }, [showRFP]);
 
-  // const handleGenerate = async () => {
-  //   try {
-  //     const userId = sessionStorage.getItem("userId");
-  //     if (!userId) throw new Error("User ID not found in session storage");
-  //     const publish_id = await getDmsPublishId(
-  //       "purchase",
-  //       "RFP_SPECIFICATION",
-  //       "RFP_SPECIFICATION"
-  //     );
-  //     // ✅ Validate form fields before upload
-  //     if (
-  //       !formData.title ||
-  //       !formData.issuedDate ||
-  //       !formData.dueDate ||
-  //       !formData.file
-  //       // !formData.description
-  //     ) {
-  //       setModalProps({
-  //         type: "warning",
-  //         title: "Missing Information",
-  //         message:
-  //           "Please fill in all required fields: Title, Dates, File, and Description.",
-  //         onClose: () => setShowModal(false),
-  //       });
-  //       setShowModal(true);
-  //       return; // stop execution
-  //     }
-
-  //     // === Upload Specification File ===
-  //     const fileFormData = new FormData();
-  //     fileFormData.append("documents", formData.file);
-  //     fileFormData.append("ref", "RFP");
-  //     fileFormData.append(
-  //       "metadata",
-  //       JSON.stringify([
-  //         {
-  //           service: "purchase",
-  //           publish_id,
-  //           user_id: userId,
-  //           document_name: formData.file?.name || "document-file.pdf",
-  //         },
-  //       ])
-  //     );
-  //     fileFormData.append("custom_folder", "purchase");
-
-  //     const fileUploadRes = await axios.post(
-  //       API.DMS_UPLOAD ||
-  //         "https://devapi.softtrails.net/saas/dms/test/dmsapi/upload-documents",
-  //       fileFormData,
-  //       {
-  //         headers: {
-  //           "Content-Type": "multipart/form-data",
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-
-  //     const fileUrl = fileUploadRes.data?.uploaded_files?.[0]?.file_url;
-  //     if (!fileUrl) throw new Error("Specification file upload failed");
-
-  //     // === Prepare and send RFP update payload ===
-  //     const rfpPayload = {
-  //       user_id: userId,
-  //       rfp_id: rfpId,
-  //       Title: formData.title,
-  //       rfp_start_date: formData.issuedDate,
-  //       rfp_end_date: formData.dueDate,
-  //       upload_file_link: fileUrl,
-  //       required_doc: { documents: [formData.requiredDocument] },
-  //       additional_description: {
-  //         description: formData.description,
-  //       },
-  //     };
-
-  //     const rfpResponse = await axios.put(
-  //       `${API.PURCHASE_API}/rfps/update_rfp/${rfpId}`,
-  //       rfpPayload,
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-
-  //     console.log("RFP updated successfully:", rfpResponse.data);
-  //     setModalProps({
-  //       type: "success",
-  //       title: "Success",
-  //       message: "RFP generated successfully.",
-  //       onClose: () => setShowModal(false),
-  //     });
-  //     setShowRFP(false);
-  //     resetForm();
-  //     fetchRequests(); // <-- Refresh table after RFP generated
-  //   } catch (error) {
-  //     console.error("Error generating RFP:", error);
-
-  //     if (error.response?.data?.message === "RFP not found") {
-  //       setModalProps({
-  //         type: "warning",
-  //         title: "RFP not found",
-  //         message: "Please update the logo and organization name first.",
-  //         onClose: () => setShowModal(false),
-  //       });
-  //     } else {
-  //       setModalProps({
-  //         type: "error",
-  //         title: "Error",
-  //         message:
-  //           error.response?.data?.message ||
-  //           error.response?.data?.error ||
-  //           error.message ||
-  //           "Failed to generate RFP.",
-  //         onClose: () => setShowModal(false),
-  //       });
-  //     }
-  //   }
-  // };
-
-  const fetchRequests = async () => {
+const fetchRequests = async () => {
     try {
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -455,7 +340,6 @@ const InventryIndenting = () => {
           setProductItems([]);
         }
       } catch (error) {
-        console.error("Error fetching indent details:", error);
       }
 
       setShowRFP(true);
@@ -465,19 +349,16 @@ const InventryIndenting = () => {
       const apiData = error.response?.data?.data;
 
       if (apiMessage === "RFP ID already generated" && apiData) {
-        console.log("RFP already exists, using existing RFP ID:", apiData);
         setRfpId(apiData);
         setShowRFP(true);
 
         try {
-          // Fetch indent details to populate product items
           const indentResponse = await axios.get(
             `${API.PURCHASE_API}/indenting/${indentingId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
           if (indentResponse.data) {
-            // Try products array first, fall back to single item
             const items =
               Array.isArray(indentResponse.data.products) &&
               indentResponse.data.products.length > 0
@@ -535,17 +416,14 @@ const InventryIndenting = () => {
                     },
                   ];
 
-            console.log("Setting product items for existing RFP:", items);
             setProductItems(items);
           }
         } catch (innerErr) {
           console.error("Failed to fetch indent after RFP exists:", innerErr);
-          // Don't block the flow if indent fetch fails
         }
 
-        // Fetch organization details and continue flow
         fetchDetails();
-        return; // Exit early after handling existing RFP case
+        return;
       }
 
       setModalProps({
@@ -575,7 +453,6 @@ const InventryIndenting = () => {
   const filteredRequests = requests.filter((item) => {
     let matches = true;
 
-    // ✅ Always show only "Approved" status
     if (item.status !== "Approved") {
       matches = false;
     }
@@ -654,15 +531,11 @@ const InventryIndenting = () => {
     }
 
     try {
-      console.log("Previewing RFP ID:", rfpId);
-      console.log("Using token:", token);
-
       const response = await axios.get(
         `${API.PURCHASE_API}/rfps/preview_rfp/${rfpId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("API Response:", response.data);
 
       if (response.data?.fileUrl) {
         window.open(response.data.fileUrl, "_blank");
@@ -709,104 +582,7 @@ const InventryIndenting = () => {
     }
   };
 
-  //   const handleSave = async () => {
-  //     try {
-  //       const userId = sessionStorage.getItem("userId");
-  //       if (!userId) throw new Error("User ID not found in session storage");
-
-  //       let logoUrl = formData.logoUrl; // default to prefilled logo URL
-
-  //       // === Upload Logo only if new file selected ===
-  //       if (formData.logo instanceof File) {
-  //         const publish_id = await getDmsPublishId(
-  //           "purchase",
-  //           "ORGANIZATION_LOGO",
-  //           "ORGANIZATION_LOGO"
-  //         );
-  //         const logoFormData = new FormData();
-  //         logoFormData.append("documents", formData.logo);
-  //         logoFormData.append("ref", "RFP");
-  //         logoFormData.append(
-  //           "metadata",
-  //           JSON.stringify([
-  //             {
-  //               service: "purchase",
-  //               publish_id,
-  //               user_id: userId,
-  //               document_name: formData.logo.name,
-  //             },
-  //           ])
-  //         );
-  //         logoFormData.append("custom_folder", "purchase");
-
-  //         const logoUploadRes = await axios.post(
-  //           API.DMS_UPLOAD ||
-  //             "https://devapi.softtrails.net/saas/dms/test/dmsapi/upload-documents",
-  //           logoFormData,
-  //           {
-  //             headers: {
-  //               "Content-Type": "multipart/form-data",
-  //               Authorization: `Bearer ${token}`,
-  //             },
-  //           }
-  //         );
-
-  //         logoUrl = logoUploadRes.data?.uploaded_files?.[0]?.file_url;
-  //         if (!logoUrl) throw new Error("Logo upload failed");
-  //       }
-
-  //   //  const fileUrl = fileUploadRes.data?.uploaded_files?.[0]?.file_url;
-  //   //     if (!fileUrl) throw new Error("Specification file upload failed");
-
-  // const rfpPayload = {
-  //   rfp_id: rfpId || undefined,
-  //   user_id: Number(userId), // ensure number type
-  //   Organization_Name: formData.organization || "",
-  //   Logo: formData.logoUrl || "",
-  //   Title: formData.title || "",
-  //   Start_Date: formData.issuedDate || "",
-  //   End_Date: formData.dueDate || "",
-  //   // Upload_file: fileUrl || "",            // matches API example key
-  //   additional_description: {
-  //     description: formData.description || "",
-  //     notes: formData.notes || ""          // optional - add to formData if needed
-  //   },
-  //   // If backend expects a count or id, adapt here. If you have array of required documents:
-  //   required_doc: Array.isArray(formData.requiredDocument)
-  //     ? formData.requiredDocument.length
-  //     : formData.requiredDocument || 0
-  // };
-  //       const rfpResponse = await axios.post(
-  //         `${API.PURCHASE_API}/rfps/create_rfp`,
-  //         rfpPayload,
-  //         { headers: { Authorization: `Bearer ${token}` } }
-  //       );
-
-  //       console.log("RFP created successfully:", rfpResponse.data);
-  //       setModalProps({
-  //         type: "success",
-  //         title: "Success!",
-  //         message: "RFP created successfully!",
-  //         onClose: () => setShowModal(false),
-  //       });
-  //       setShowModal(true);
-  //     } catch (error) {
-  //       console.error("Error saving RFP:", error);
-  //       const apiMsg =
-  //         error.response?.data?.message ||
-  //         error.response?.data?.error ||
-  //         error.message ||
-  //         "Failed to create RFP";
-  //       setModalProps({
-  //         type: "error",
-  //         message: apiMsg,
-  //         onClose: () => setShowModal(false),
-  //       });
-  //       setShowModal(true);
-  //     }
-  //   };
-
-  const handleSave = async () => {
+ const handleSave = async () => {
     try {
       const userId = sessionStorage.getItem("userId");
       if (!userId) throw new Error("User ID not found in session storage");
@@ -936,7 +712,6 @@ const InventryIndenting = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("✅ RFP created successfully:", rfpResponse.data);
       setModalProps({
         type: "success",
         title: "Success!",

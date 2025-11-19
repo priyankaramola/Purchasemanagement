@@ -7,6 +7,7 @@ import PurchaseOrder from "./rfpTabs/PurchaseOrder";
 import Supplies from "./rfpTabs/Supplies";
 import PopupModal from "./PopupModal";
 import RFPShared from "./rfpTabs/RFPShared";
+import Grn from "./GRN/Grn";
 
 const PurchaseProcess = ({ onClose, selectedContacts }) => {
   const getToken = () => sessionStorage.getItem("token");
@@ -283,6 +284,7 @@ const handleSend = async (e) => {
     { id: "RfpShared", label: "RFP Shared" },
     { id: "Quotation", label: "Quotation" },
     { id: "PurchaseOrder", label: "Purchase Order" },
+    { id: "GRN", label: "GRN" },
     { id: "Supplies", label: "Supplies" },
   ];
 
@@ -732,6 +734,7 @@ const handleSend = async (e) => {
 {activeTab === "RfpShared" && <RFPShared />}
           {activeTab === "Quotation" && <Quotation />}
           {activeTab === "PurchaseOrder" && <PurchaseOrder />}
+          {activeTab === "GRN" && <Grn />}
           {activeTab === "Supplies" && <Supplies />}
         </div>
       </div>

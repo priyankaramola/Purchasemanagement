@@ -238,7 +238,6 @@ const Approvals = () => {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((response) => {
-        console.log(`${status} successful:`, response.data);
 
         // Show custom PopupModal
         setModalProps({
