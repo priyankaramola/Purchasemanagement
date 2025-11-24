@@ -95,6 +95,22 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
       });
     }
   };
+  const fetchVendorData = async (vendorId) => {
+    if (!vendorId) return null;
+    try {
+      const res = await axios.get(
+        `${API.PURCHASE_API}/purchase_order/vendors_data/${vendorId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return res.data?.data || null;
+    } catch (err) {
+      console.error("Error fetching vendor data:", err);
+      return null;
+    }
+  };
+
   const fetchQuotationDetails = async (id) => {
     if (!id) return;
     try {
@@ -117,6 +133,12 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
       const detail = res.data?.data || {};
       const vendorDetail = vendorRes.data?.data || {};
       await fetchCompanyDetails(id);
+      
+      // Fetch additional vendor data from the new API if vendor_id exists
+      let additionalVendorData = null;
+      if (detail.vendor_id || vendorDetail.vendor_id) {
+        additionalVendorData = await fetchVendorData(detail.vendor_id || vendorDetail.vendor_id);
+      }
 
       // Store all data from both APIs
       setVendorName(detail.vendor_name || vendorDetail.vendor_name || "");
@@ -143,12 +165,13 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
         quantity: detail.quantity || 0,
         unitPrice: detail.unit_price || "",
       }));
+      // Merge vendor data from all sources - prioritize additionalVendorData
       setSupplier({
-        name: detail.supplier_name || vendorDetail.vendor_name,
-        address: vendorDetail.vendor_address || detail.vendor_address,
-        city: vendorDetail.city || detail.city,
-        phone: vendorDetail.landline_num || detail.landline_num,
-        gst: vendorDetail.gst_number || detail.gst_number,
+        name: additionalVendorData?.vendor_name || detail.supplier_name || vendorDetail.vendor_name,
+        address: additionalVendorData?.vendor_address || vendorDetail.vendor_address || detail.vendor_address,
+        city: additionalVendorData?.vendor_city || vendorDetail.city || detail.city,
+        phone: additionalVendorData?.vendor_phone || vendorDetail.landline_num || detail.landline_num,
+        gst: additionalVendorData?.vendor_gst || additionalVendorData?.gst_number || vendorDetail.gst_number || detail.gst_number,
       });
     } catch (err) {
       setVendorName("");
