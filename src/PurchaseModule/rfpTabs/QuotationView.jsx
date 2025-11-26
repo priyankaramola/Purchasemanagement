@@ -51,18 +51,16 @@ const QuotationView = () => {
   const vendor = data.vendor_name || data.vendor || "--";
 
   // Items may be under different keys
-  const items =
+ const items =
     data.items || data.line_items || data.required_items || data.quotation_items || [];
 
   // If items not found, try to detect an items-like array inside the payload
   const detectItemsFromData = (payload) => {
     if (!payload || typeof payload !== "object") return [];
-    // Search top-level values for arrays of objects that look like line items
     for (const key of Object.keys(payload)) {
       const val = payload[key];
       if (Array.isArray(val) && val.length > 0 && typeof val[0] === "object") {
         const sample = val[0];
-        // Heuristic: presence of quantity or unit_price or asset_name or item_name or total_amount
         if (
           "quantity" in sample ||
           "unit_price" in sample ||
@@ -78,9 +76,22 @@ const QuotationView = () => {
     }
     return [];
   };
-
-  const resolvedItems = items.length > 0 ? items : detectItemsFromData(data);
-
+  let resolvedItems = Array.isArray(items) && items.length > 0 ? items : detectItemsFromData(data);
+ if ((!resolvedItems || resolvedItems.length === 0) && data && typeof data === "object") {
+    // Heuristic: treat top-level object as a single line item if it has typical item fields
+    const singleItemKeys = [
+      "asset_name",
+      "item_name",
+      "name",
+      "material_name",
+      "quantity",
+      "unit_price",
+      "total_amount",
+      "amount",
+    ];
+    const hasItemFields = singleItemKeys.some((k) => k in data);
+    if (hasItemFields) resolvedItems = [data];
+  }
   // Totals calculation helpers
   const parseNumber = (v) => {
     if (v == null) return 0;

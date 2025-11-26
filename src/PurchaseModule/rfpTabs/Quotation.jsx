@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import DownloadTableButtons from "../components/Downloadpdfexcel";
 import { toast } from "react-toastify";
 import { ToastContainer } from "react-toastify";
+import Select from "react-select";
 
 const Quotation = () => {
   const createdBy = sessionStorage.getItem("userId");
@@ -74,6 +75,12 @@ const Quotation = () => {
     };
     fetchRfps();
   }, [token]);
+
+    // Convert RFP options to react-select format
+  const rfpSelectOptions = rfpOptions.map((rfp) => ({
+    value: rfp.rfp_id,
+    label: rfp.rfp_id,
+  }));
 
   // Fetch quotations when RFP is selected
   useEffect(() => {
@@ -247,18 +254,22 @@ const Quotation = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <select
-          className="border rounded px-3 py-2 w-48"
-          value={selectedRfp}
-          onChange={(e) => setSelectedRfp(e.target.value)}
-        >
-          <option value="">Select RFP ID</option>
-          {rfpOptions.map((rfp) => (
-            <option key={rfp.rfp_id} value={rfp.rfp_id}>
-              {rfp.rfp_id}
-            </option>
-          ))}
-        </select>
+       <Select
+          options={rfpSelectOptions}
+          value={selectedRfp ? { value: selectedRfp, label: selectedRfp } : null}
+          onChange={(option) => setSelectedRfp(option ? option.value : "")}
+          placeholder="Select RFP ID"
+          isClearable
+          isSearchable
+          className="w-48"
+          styles={{
+            control: (base) => ({
+              ...base,
+              borderColor: "#ccc",
+              borderRadius: "0.375rem",
+            }),
+          }}
+        />
         <div className="flex items-center border rounded px-2 py-1">
           <input
             type="date"
@@ -651,7 +662,8 @@ const Quotation = () => {
                       {
                         status: "Negotiation",
                         user_id: createdBy,
-                      }
+                      },
+                      { headers: { Authorization: `Bearer ${token}` }   }
                     );
                     setQuotations((prev) =>
                       prev.map((q) =>

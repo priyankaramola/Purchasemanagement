@@ -40,6 +40,7 @@ const FinancialBudget = () => {
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
   const [filteredBudgets, setFilteredBudgets] = useState([]);
+  const [workflowOptions, setWorkflowOptions] = useState([]); // Stores fetched workflows
 
   const getToken = () => sessionStorage.getItem("token");
   const token = getToken();
@@ -102,7 +103,7 @@ const FinancialBudget = () => {
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await axios.get(`${API.API_BASE}/test/departments`, {
+        const response = await axios.get(`${API.API_BASE}/departments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDepartments(response.data);
@@ -207,6 +208,15 @@ const FinancialBudget = () => {
       [name]: name === "department" ? Number(value) : value,
     }));
   };
+ useEffect(() => {
+    axios.get(`${API.WORKFLOW_API}/workflow/get-modules/module?module_name=Purchase Management&sub_module_name=Indenting`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => {
+        setWorkflowOptions(
+          Array.isArray(res.data.workflows) ? res.data.workflows : []
+        );
+      })
+      .catch((err) => console.error("Error fetching workflows:", err));
+  }, []);
 
   const handleSave = async () => {
     const confirmResult = await Swal.fire({
@@ -238,9 +248,10 @@ const FinancialBudget = () => {
 
     const payload = {
       budget_name: budgetData.budgetName,
-      dept_id: budgetData.department,
+      department: budgetData.department,
       budget: parseFloat(budgetData.amount),
       user_id: userId,
+      workflow_id: budgetData.workflow,
       start_date: budgetData.startDate,
       end_date: budgetData.endDate,
     };
@@ -517,7 +528,25 @@ Update?          </div>
                     ))}
                   </select>
                 </div>
-
+<div>
+                 <label>Workflow</label>
+                  <select
+                    name="workflow"
+                    value={budgetData.workflow}
+                    onChange={handleChange}
+                    className="border p-2 w-full rounded-lg"
+                  >
+                    <option value="">Select Workflow</option>
+                    {workflowOptions.map((wf, idx) => (
+                      <option
+                        key={wf.workflow_id ?? wf.id ?? idx}
+                        value={wf.workflow_id ?? wf.id ?? ""}
+                      >
+                        {wf.workflow_name ?? wf.name ?? `Workflow ${idx + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <label>Amount</label>
                   <input
@@ -529,6 +558,7 @@ Update?          </div>
                     placeholder="Enter Budget amount"
                   />
                 </div>
+
 
                 <div>
                   <label>Start Date</label>

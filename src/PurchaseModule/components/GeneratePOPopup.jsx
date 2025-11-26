@@ -311,9 +311,11 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+ let successMessage = "Purchase Order generated and uploaded successfully.";
+      let successType = "success";
 
       // Try to send the PO via UCS (same approach as PurchaseProcess)
-      try {
+    try {
         // 1) Get modules to determine uniqueIdentifierName
         const modulesRes = await axios.get(
           `${API.API_BASE}/ucs/test/api/modules`,
@@ -359,89 +361,72 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
               sendRes.data?.message === "Sent Successfully" ||
               sendRes.data?.success === true
             ) {
-              // sent successfully — show success modal
-              setModalProps({
-                type: "success",
-                title: "Success!",
-                message:
-                  "Purchase Order generated, uploaded and sent successfully.",
-                onClose: () => setShowModal(false),
-              });
+              successMessage = "Purchase Order generated, uploaded and sent successfully.";
+              successType = "success";
             } else {
-              setModalProps({
-                type: "warning",
-                title: "PO Created",
-                message:
-                  "Purchase Order created but sending via UCS failed. Please try sending manually.",
-                onClose: () => setShowModal(false),
-              });
+              successMessage = "Purchase Order created successfully. Sending to vendor failed - please send manually.";
+              successType = "warning";
             }
           } catch (sendErr) {
             console.error("UCS send error:", sendErr);
-            setModalProps({
-              type: "warning",
-              title: "PO Created",
-              message:
-                "Purchase Order created but sending via UCS failed. Please try sending manually.",
-              onClose: () => setShowModal(false),
-            });
+            successMessage = "Purchase Order created successfully. Sending to vendor failed - please send manually.";
+            successType = "warning";
           }
         } else {
-          // No recipient email available
-          setModalProps({
-            type: "info",
-            title: "PO Created",
-            message:
-              "Purchase Order created. No vendor email found to send automatically.",
-            onClose: () => setShowModal(false),
-          });
+          successMessage = "Purchase Order created successfully. No vendor email found to send automatically.";
+          successType = "info";
         }
       } catch (ucserr) {
         console.error("Error while preparing UCS send:", ucserr);
-        setModalProps({
-          type: "info",
-          title: "PO Created",
-          message: "Purchase Order created. Failed to initiate automatic send.",
-          onClose: () => setShowModal(false),
-        });
+        successMessage = "Purchase Order created successfully.";
+        successType = "success";
       }
 
-      // Refresh parent table and close popup
-      if (fetchPOs) {
-        try {
-          await fetchPOs();
-        } catch (e) {
-          console.warn("fetchPOs threw:", e);
-        }
-      }
-      if (onClose) onClose();
+      // Show success modal with appropriate message
+      setModalProps({
+        type: successType,
+        title: "Success!",
+        message: successMessage,
+        onClose: () => {
+          setShowModal(false);
+          // Refresh parent table and close popup
+          if (fetchPOs) {
+            try {
+              fetchPOs();
+            } catch (e) {
+              console.warn("fetchPOs threw:", e);
+            }
+          }
+          if (onClose) onClose();
 
-      // Reset form/state
-      setForm({
-        quotationId: "",
-        vendorName: "",
-        productName: "",
-        unit: "",
-        quantity: 0,
-        unitPrice: "",
-        deliveryDate: "",
-        deliveryAddress: "",
-        terms: "",
+          // Reset form/state
+          setForm({
+            quotationId: "",
+            vendorName: "",
+            productName: "",
+            unit: "",
+            quantity: 0,
+            unitPrice: "",
+            deliveryDate: "",
+            deliveryAddress: "",
+            terms: "",
+          });
+          setCompany({
+            name: "",
+            address: "",
+            city: "",
+            country: "",
+            gst: "",
+            pan: "",
+          });
+          setSupplier({});
+          setPoNumber("");
+          setQuotationId("");
+          setVendorName("");
+          setProductItems([]);
+          setSearchError("");
+        },
       });
-      setCompany({
-        name: "",
-        address: "",
-        city: "",
-        country: "",
-        gst: "",
-        pan: "",
-      });
-      setSupplier({});
-      setPoNumber("");
-      setQuotationId("");
-      setVendorName("");
-      setProductItems([]);
-      setSearchError("");
 
       setShowModal(true);
     } catch (error) {
@@ -452,7 +437,7 @@ const GeneratePOPopup = ({ open, fetchPOs, onClose }) => {
           "Failed to generate Purchase Order."
       );
     }
-  };
+  }; 
 
   if (!open) return null;
 

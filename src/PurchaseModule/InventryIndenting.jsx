@@ -54,9 +54,9 @@ const InventryIndenting = () => {
   const [selectedLogoName, setSelectedLogoName] = useState("");
   const [selectedSpecFileName, setSelectedSpecFileName] = useState("");
   const [documentOptions, setDocumentOptions] = useState([]);
+  const [budgetOptions, setBudgetOptions] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalProps, setModalProps] = useState({});
-  const [deleteId, setDeleteId] = useState(null);
   const columns = [
     { header: "S. No.", accessor: "sno" },
     { header: "Indent ID", accessor: "id" },
@@ -173,29 +173,7 @@ const fetchRequests = async () => {
     fetchRequests();
   }, []);
 
-  const confirmDelete = async (id) => {
-    try {
-      await axios.delete(`${API.PURCHASE_API}/indenting/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setRequests((prev) => prev.filter((request) => request.id !== id));
-      setModalProps({
-        type: "success",
-        title: "Deleted!",
-        message: "The indent has been deleted.",
-        onClose: () => setShowModal(false),
-      });
-      setShowModal(true);
-    } catch (error) {
-      setModalProps({
-        type: "error",
-        title: "Error!",
-        message: "Failed to delete the indent.",
-        onClose: () => setShowModal(false),
-      });
-      setShowModal(true);
-    }
-  };
+
   const handleRequestMaterialClick = (item) => {
     setSelectedRequest(item);
     setIsRequestMaterialOpen(true);
@@ -753,7 +731,7 @@ const fetchRequests = async () => {
         message: "RFP created successfully!",
         onClose: () => setShowModal(false),
       });
-      setShowModal(true);
+      setShowModal(false);
     } catch (error) {
       const apiMsg =
         error.response?.data?.message ||
@@ -902,6 +880,40 @@ const fetchRequests = async () => {
     status: item.status,
   }));
 
+  useEffect(() => {
+    const loadBudgets = async () => {
+      try {
+        const res = await axios.get(`${API.PURCHASE_API}/budget/get-budget`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const mapped = data.map((item, idx) => ({
+          id:
+            item.id ??
+            item.budget_id ??
+            (item.budget_name ? idx + 1 : idx + 1), // fallback id
+          budget_name:
+            item.budget_name || item.name || item.budget || String(item.id || item.budget_id || idx + 1),
+        }));
+        setBudgetOptions(mapped);
+      } catch (err) {
+        console.error("Error fetching budgets (get-budget):", err);
+        setBudgetOptions([]);
+      }
+    };
+
+    loadBudgets();
+  }, [token]);
+
+    const getBudgetDisplayName = (budgetVal) => {
+    if (budgetVal === null || budgetVal === undefined) return "";
+    const found = budgetOptions.find(
+      (b) =>
+        String(b.id) === String(budgetVal) ||
+        String(b.budget_name) === String(budgetVal)
+    );
+    return found ? found.budget_name : String(budgetVal);
+  };
   return (
     <div className="p-2">
       <div className="flex gap-4 mb-4">
@@ -969,7 +981,7 @@ const fetchRequests = async () => {
                   {index + 1 + (currentPage - 1) * rowsPerPage}
                 </td>
                 <td
-                  className="p-2 text-center cursor-pointer"
+                  className="p-2 text-center cursor-pointer text-blue-600"
                   onClick={() => handleRequestMaterialClick(item)}
                 >
                   {item.indent_id}
@@ -1045,7 +1057,7 @@ const fetchRequests = async () => {
               <div>
                 <h2 className="text-xl font-semibold">Raise request details</h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  Indent Id: {selectedRequest.indent_id || "9876543234567"}
+                  Indent Id: {selectedRequest.indent_id || "N/A"}
                 </p>
               </div>
               <button onClick={() => setIsRequestMaterialOpen(false)}>
@@ -1063,7 +1075,6 @@ const fetchRequests = async () => {
                     <th className="p-3 text-left">Material</th>
                     <th className="p-3 text-left">Quantity</th>
                     <th className="p-3 text-left">Uom</th>
-                    <th className="p-3 text-left">Workflow</th>
                     <th className="p-3 text-left">Budget</th>
                   </tr>
                 </thead>
@@ -1080,7 +1091,7 @@ const fetchRequests = async () => {
                             selectedRequest.asset_name || "Asset Name",
                           quantity: selectedRequest.quantity || "08",
                           uom: selectedRequest.uom || "-",
-                          workflow: selectedRequest.workflow || "Workflow name",
+                          // workflow: selectedRequest.workflow || "Workflow name",
                           budget: selectedRequest.budget || "₹50000.00",
                           description: "Description Example xyz",
                         },
@@ -1103,10 +1114,10 @@ const fetchRequests = async () => {
                       <td className="p-3 align-top">{item.asset_name}</td>
                       <td className="p-3 align-top">{item.quantity}</td>
                       <td className="p-3 align-top">{item.uom}</td>
-                      <td className="p-3 align-top">
-                        {item.workflow || selectedRequest.workflow}
+
+                       <td className="p-3 align-top">
+                     {getBudgetDisplayName(item.budget ?? item.budget_id ?? selectedRequest.budget)}
                       </td>
-                      <td className="p-3 align-top">{item.budget}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1143,7 +1154,7 @@ const fetchRequests = async () => {
 
       {showRFP && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-xl p-3 w-[95%] max-w-3xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl p-5 w-[95%] max-w-3xl max-h-[80vh] overflow-y-auto">
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
               <div>
@@ -1283,12 +1294,10 @@ const fetchRequests = async () => {
                       <th className="p-3 text-left border-b"></th>
                       <th className="p-3 text-left border-b">Request for</th>
                       <th className="p-3 text-left border-b">Category</th>
-                      <th className="p-3 text-left border-b">
-                        Material / Asset Name
-                      </th>
+                      <th className="p-3 text-left border-b">Asset Name</th>
                       <th className="p-3 text-left border-b">Quantity</th>
                       <th className="p-3 text-left border-b">UOM</th>
-                      <th className="p-3 text-left border-b">Workflow</th>
+                      {/* <th className="p-3 text-left border-b">Workflow</th> */}
                       <th className="p-3 text-left border-b">Budget</th>
                       <th className="p-3 text-left border-b">Description</th>
                     </tr>
@@ -1316,8 +1325,10 @@ const fetchRequests = async () => {
                         <td className="p-3 border-b">
                           {item.uom || item.unit || "-"}
                         </td>
-                        <td className="p-3 border-b">{item.workflow || "-"}</td>
-                        <td className="p-3 border-b">{item.budget || "-"}</td>
+                        {/* <td className="p-3 border-b">{item.workflow || "-"}</td> */}
+                         <td className="p-3 align-top">
+                      {getBudgetDisplayName(item.budget ?? item.budget_id ?? selectedRequest.budget)}
+                      </td>
                         <td className="p-3 border-b">
                           {item.description || "-"}
                         </td>
@@ -1357,21 +1368,7 @@ const fetchRequests = async () => {
                 </p>
               )}
             </div>
-            {/* Description */}
-            <div className="mb-3">
-              <label className="block font-medium mb-1">
-                Additional Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                rows={2}
-                className="border border-gray-300 rounded px-3 py-2 w-full"
-              />
-            </div>
-            <div className="mb-3">
+              <div className="mb-3">
               <label className="block font-medium mb-1">
                 Required Documents
               </label>
@@ -1411,6 +1408,21 @@ const fetchRequests = async () => {
                 }}
               />
             </div>
+            {/* Description */}
+            <div className="mb-3">
+              <label className="block font-medium mb-1">
+                Additional Description
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                rows={2}
+                className="border border-gray-300 rounded px-3 py-2 w-full"
+              />
+            </div>
+          
             {/* Action Buttons */}
             <div className="flex justify-start gap-4">
               <button

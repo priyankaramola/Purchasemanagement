@@ -3,21 +3,14 @@ import React, { useState, useEffect } from "react";
 import Select from "react-select";
 import { useRef } from "react";
 import PropTypes from "prop-types";
-/**
- * Props:
- * - isOpen, onClose
- * - po: optional default PO object
- * - onGenerate: callback(res) called after successful create (or when parent handles submit)
- * - submitToApi: boolean (default true) -> modal will call API itself
- * - apiEndpoint: optional override for create GRN endpoint
- */
+
 const GenerateGrnModal = ({
   isOpen,
   onClose,
   po = {},
   onGenerate,
   submitToApi = true,
-  apiEndpoint = "http://13.204.15.86:3002/purchase/supplier_grn/create_grn",
+  apiEndpoint = `${process.env.REACT_APP_PURCHASE_API}/supplier_grn/create_grn`,
   onSuccess,
 }) => {
   const items = po.indenting_items || po.items || [];
@@ -63,7 +56,7 @@ const [modal, setModal] = useState({
   // Fetch PO options if you need (parent can provide PO via props instead)
 useEffect(() => {
   let mounted = true;
-  const url = "http://13.204.15.86:3002/purchase/supplier_po/received_po_data";
+  const url = `${process.env.REACT_APP_PURCHASE_API}/purchase_order/AllPO`;
 
   axios
     .get(url, {
@@ -188,63 +181,63 @@ useEffect(() => {
   };
 
  const handleGenerate = async () => {
-  setError("");
-  setLoading(true);
+    setError("");
+    setLoading(true);
 
-  try {
-    const payload = buildPayload();
-    const apiEndpoint =
-      "http://13.204.15.86:3002/purchase/supplier_grn/create_grn";
-    const token = sessionStorage.getItem("token");
+    try {
+      const payload = buildPayload();
+      const apiEndpoint =
+        "http://13.204.15.86:3002/purchase/supplier_grn/create_grn";
+      const token = sessionStorage.getItem("token");
 
-    // If parent handles submission externally
-    if (!submitToApi && typeof onGenerate === "function") {
-      onGenerate({ ...payload, invoiceFile, otherFile, items: rows });
-      onClose();
-      setLoading(false);
-      return;
-    }
+      // If parent handles submission externally
+      if (!submitToApi && typeof onGenerate === "function") {
+        onGenerate({ ...payload, invoiceFile, otherFile, items: rows });
+        onClose();
+        setLoading(false);
+        return;
+      }
 
-    const hasFiles = invoiceFile instanceof File || otherFile instanceof File;
-    let res;
+      const hasFiles = invoiceFile instanceof File || otherFile instanceof File;
+      let res;
 
-    if (hasFiles) {
-      // If there are attached files, send FormData
-      const fd = new FormData();
-      fd.append("po_id", payload.po_id);
-      fd.append("generated_date", payload.generated_date);
-      fd.append("delivery_date", payload.delivery_date);
-      fd.append("status", payload.status || "Full GRN");
-      if (invoiceFile) fd.append("invoice", invoiceFile);
-      if (otherFile) fd.append("documents", otherFile);
+      if (hasFiles) {
+        // If there are attached files, send FormData
+        const fd = new FormData();
+        fd.append("po_id", payload.po_id);
+        fd.append("generated_date", payload.generated_date);
+        fd.append("delivery_date", payload.delivery_date);
+        fd.append("status", payload.status || "Full GRN");
+        if (invoiceFile) fd.append("invoice", invoiceFile);
+        if (otherFile) fd.append("documents", otherFile);
 
-      res = await axios.post(apiEndpoint, fd, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // No Content-Type here — browser sets it automatically
-        },
-      });
-    } else {
-      // No file → send JSON payload
-      const body = {
-        po_id: payload.po_id,
-        generated_date: payload.generated_date,
-        delivery_date: payload.delivery_date,
-        invoice: payload.invoice || "",
-        documents: payload.documents || "",
-        status: payload.status || "Full GRN",
-      };
+        res = await axios.post(apiEndpoint, fd, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            // No Content-Type here — browser sets it automatically
+          },
+        });
+      } else {
+        // No file → send JSON payload
+        const body = {
+          po_id: payload.po_id,
+          generated_date: payload.generated_date,
+          delivery_date: payload.delivery_date,
+          invoice: payload.invoice || "",
+          documents: payload.documents || "",
+          status: payload.status || "Full GRN",
+        };
 
-      res = await axios.post(apiEndpoint, body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-    }
+        res = await axios.post(apiEndpoint, body, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+      }
 
-    // ✅ Handle success or error response
-    if (res?.data?.success) {
+      // ✅ Handle success or error response
+      if (res?.data?.success) {
         setModal({
           isOpen: true,
           type: "success",
@@ -271,7 +264,7 @@ useEffect(() => {
       console.error("Error while creating GRN:", err);
       const errorMsg = err?.response?.data?.message || "Network error while creating GRN";
       setError(errorMsg);
-        setModal({
+      setModal({
         isOpen: true,
         type: "error",
         title: "Error",
@@ -282,15 +275,13 @@ useEffect(() => {
     }
   };
 
-  // const handleModalClose = () => {
-  //   setModal({ ...modal, isOpen: false });
-  //   if (modal.type === "success") {
-  //     onClose(); // Close GenerateGrnModal after success
-  //   }
-  // };
-
-
-  return (
+   const handleModalClose = () => {
+    setModal({ ...modal, isOpen: false });
+    if (modal.type === "success") {
+      onClose(); // Close GenerateGrnModal after success
+    }
+  };
+ return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4" aria-modal="true">
       <div className="w-full max-w-3xl bg-white rounded-lg overflow-hidden shadow-lg">
         <div className="flex items-center justify-between px-6 py-3 bg-blue-600 text-white">
@@ -344,11 +335,11 @@ useEffect(() => {
                       <td className="px-3 py-2">₹{(Number(r.unitPrice || 0) * Number(r.quantity || 0)).toLocaleString()}</td>
                       <td className="px-3 py-2">
                         <input type="checkbox" checked={r.qc} onChange={() => handleToggle(idx, "qc")} />
-                       { } QC
+                        QC
                       </td>
                       <td className="px-3 py-2">
                         <input type="checkbox" checked={r.receiving} onChange={() => handleToggle(idx, "receiving")} />
-                     { }   Receiving Status 
+                        Receiving Status 
                       </td>
                     </tr>
                   ))}
@@ -391,8 +382,141 @@ useEffect(() => {
           </div>
         </div>
       </div>
+
+      {/* ✅ Success/Error Modal */}
+      {modal.isOpen && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <div className="flex items-center gap-3 mb-4">
+              {modal.type === "success" ? (
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              ) : (
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+              <h2 className="text-lg font-semibold text-gray-900">{modal.title}</h2>
+            </div>
+            <p className="text-gray-600 mb-6">{modal.message}</p>
+            <button
+              onClick={handleModalClose}
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-medium"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default GenerateGrnModal;
+//           <h3 className="text-lg font-semibold">Generate GRN</h3>
+//           <button onClick={onClose} className="rounded-full p-1 bg-blue-700 hover:bg-blue-800" aria-label="Close">✕</button>
+//         </div>
+
+//         <div className="p-6 space-y-4">
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700">PO ID</label>
+//             <div className="mt-1">
+//               <Select
+//                 value={selectedPo}
+//                 onChange={(selected) => setSelectedPo(selected)}
+//                 options={options}
+//                 placeholder={po?.po_id ? po.po_id : "Search"}
+//                 isClearable
+//                 styles={{
+//                   control: (base) => ({
+//                     ...base,
+//                     borderColor: "#d1d5db",
+//                     borderRadius: "0.375rem",
+//                     minHeight: "38px",
+//                     boxShadow: "none",
+//                   }),
+//                 }}
+//               />
+//             </div>
+//           </div>
+
+//           <div>
+//             <div className="text-sm font-medium text-gray-700 mb-2">Material Details</div>
+//             <div className="bg-gray-50 rounded-md p-2 overflow-auto max-h-48">
+//               <table className="w-full text-sm">
+//                 <thead>
+//                   <tr className="text-left bg-gray-200 text-gray-600 text-xs">
+//                     <th className="px-3 py-2">Material Name</th>
+//                     <th className="px-3 py-2">Unit</th>
+//                     <th className="px-3 py-2">Unit Price</th>
+//                     <th className="px-3 py-2">Total</th>
+//                     <th className="px-3 py-2"></th>
+//                     <th className="px-3 py-2"></th>
+//                   </tr>
+//                 </thead>
+//                 <tbody>
+//                   {rows.map((r, idx) => (
+//                     <tr key={idx} className="border-t">
+//                       <td className="px-3 py-2">{r.asset_name || r.name || "-"}</td>
+//                       <td className="px-3 py-2">{r.uom || r.unit || "-"}</td>
+//                       <td className="px-3 py-2">₹{Number(r.unitPrice).toLocaleString()}</td>
+//                       <td className="px-3 py-2">₹{(Number(r.unitPrice || 0) * Number(r.quantity || 0)).toLocaleString()}</td>
+//                       <td className="px-3 py-2">
+//                         <input type="checkbox" checked={r.qc} onChange={() => handleToggle(idx, "qc")} />
+//                        { } QC
+//                       </td>
+//                       <td className="px-3 py-2">
+//                         <input type="checkbox" checked={r.receiving} onChange={() => handleToggle(idx, "receiving")} />
+//                      { }   Receiving Status 
+//                       </td>
+//                     </tr>
+//                   ))}
+//                 </tbody>
+//               </table>
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700">Current Date</label>
+//               <input type="date" value={currentDate} onChange={(e) => setCurrentDate(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700">Delivery Date</label>
+//               <input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} className="mt-1 w-full border rounded px-3 py-2" />
+//             </div>
+//           </div>
+
+//           <div className="grid grid-cols-2 gap-4">
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700">Upload Invoice</label>
+//               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setInvoiceFile(e.target.files?.[0] || null)} className="mt-1" />
+//               {invoiceFile && <div className="text-xs mt-1 text-blue-600">{invoiceFile.name}</div>}
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-700">Upload other document</label>
+//               <input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={(e) => setOtherFile(e.target.files?.[0] || null)} className="mt-1" />
+//               {otherFile && <div className="text-xs mt-1 text-blue-600">{otherFile.name}</div>}
+//             </div>
+//           </div>
+
+//           {error && <div className="text-sm text-red-600">{error}</div>}
+
+//           <div className="flex justify-left gap-4 mt-2">
+//             <button onClick={handleGenerate} disabled={loading} className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-60">
+//               {loading ? "Generating..." : "Generate"}
+//             </button>
+//             <button onClick={onClose} className="bg-gray-100 text-gray-800 px-6 py-2 rounded hover:bg-gray-200">Cancel</button>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default GenerateGrnModal;

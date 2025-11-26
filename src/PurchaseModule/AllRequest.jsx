@@ -440,6 +440,10 @@ const AllRequest = () => {
     value: cat,
     label: cat,
   }));
+    const statusSelectOptions = statusOptions.map((s) => ({ value: s, label: s }));
+  const handleStatusSelectChange = (opt) => {
+    setStatus(opt?.value || "");
+  };
   const exportData = filteredRequests.map((item, idx) => ({
     sno: idx + 1,
     request_for: item.request_for,
@@ -488,18 +492,15 @@ const AllRequest = () => {
           />
         </div>
 
-        <select
-          value={status}
-          onChange={handleStatusChange}
-          className="border p-2 rounded-xl"
-        >
-          <option value="">All Status</option>
-          {statusOptions.map((statusName) => (
-            <option key={statusName} value={statusName}>
-              {statusName}
-            </option>
-          ))}
-        </select>
+         <div style={{ minWidth: 180 }}>
+          <Select
+            options={statusSelectOptions}
+            value={statusSelectOptions.find((opt) => opt.value === status) || null}
+            onChange={(opt) => handleStatusSelectChange(opt)}
+            placeholder="All Status"
+            isClearable
+          />
+        </div>
         <div className="flex-1 flex justify-end">
           <DownloadTableButtons
             data={exportData}
